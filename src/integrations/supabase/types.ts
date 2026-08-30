@@ -174,6 +174,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      confirm_booking: {
+        Args: { p_booking_id: string; p_room_id: string }
+        Returns: string
+      }
       create_guest_booking: {
         Args: {
           p_check_in_date: string
