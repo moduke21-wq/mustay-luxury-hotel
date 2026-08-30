@@ -14,16 +14,213 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          booking_number: string
+          check_in_date: string
+          check_in_time: string
+          check_out_date: string
+          check_out_time: string
+          created_at: string
+          guest_email: string | null
+          guest_name: string
+          guest_phone: string
+          id: string
+          num_guests: number
+          payment_status: string
+          room_category: string
+          room_id: string | null
+          special_requests: string | null
+          status: string
+          total_amount: number
+          verification_code: string | null
+        }
+        Insert: {
+          booking_number: string
+          check_in_date: string
+          check_in_time?: string
+          check_out_date: string
+          check_out_time?: string
+          created_at?: string
+          guest_email?: string | null
+          guest_name: string
+          guest_phone: string
+          id?: string
+          num_guests?: number
+          payment_status?: string
+          room_category: string
+          room_id?: string | null
+          special_requests?: string | null
+          status?: string
+          total_amount?: number
+          verification_code?: string | null
+        }
+        Update: {
+          booking_number?: string
+          check_in_date?: string
+          check_in_time?: string
+          check_out_date?: string
+          check_out_time?: string
+          created_at?: string
+          guest_email?: string | null
+          guest_name?: string
+          guest_phone?: string
+          id?: string
+          num_guests?: number
+          payment_status?: string
+          room_category?: string
+          room_id?: string | null
+          special_requests?: string | null
+          status?: string
+          total_amount?: number
+          verification_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      rooms: {
+        Row: {
+          amenities: string[]
+          bed_type: string
+          capacity: number
+          category: string
+          created_at: string
+          floor: number
+          id: string
+          images: string[]
+          price_per_night: number
+          room_number: string
+          status: string
+        }
+        Insert: {
+          amenities?: string[]
+          bed_type?: string
+          capacity?: number
+          category: string
+          created_at?: string
+          floor?: number
+          id?: string
+          images?: string[]
+          price_per_night?: number
+          room_number: string
+          status?: string
+        }
+        Update: {
+          amenities?: string[]
+          bed_type?: string
+          capacity?: number
+          category?: string
+          created_at?: string
+          floor?: number
+          id?: string
+          images?: string[]
+          price_per_night?: number
+          room_number?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_guest_booking: {
+        Args: {
+          p_check_in_date: string
+          p_check_in_time: string
+          p_check_out_date: string
+          p_guest_email: string
+          p_guest_name: string
+          p_guest_phone: string
+          p_num_guests: number
+          p_room_category: string
+          p_special_requests: string
+        }
+        Returns: {
+          booking_number: string
+          total_amount: number
+        }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
+      lookup_booking: {
+        Args: { p_reference: string }
+        Returns: {
+          booking_number: string
+          check_in_date: string
+          check_in_time: string
+          check_out_date: string
+          check_out_time: string
+          guest_name: string
+          num_guests: number
+          payment_status: string
+          room_category: string
+          room_number: string
+          special_requests: string
+          status: string
+          total_amount: number
+          verification_code: string
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "manager" | "receptionist"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +347,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "manager", "receptionist"],
+    },
   },
 } as const
