@@ -109,13 +109,13 @@ export const createGuestBooking = createServerFn({ method: "POST" })
     const { data: result, error } = await supabase.rpc("create_guest_booking", {
       p_guest_name: data.guestName,
       p_guest_phone: data.guestPhone,
-      p_guest_email: data.guestEmail || null,
+      p_guest_email: data.guestEmail || "",
       p_room_category: data.roomCategory,
       p_check_in_date: data.checkInDate,
       p_check_in_time: `${data.checkInTime}:00`,
       p_check_out_date: data.checkOutDate,
       p_num_guests: data.numGuests,
-      p_special_requests: data.specialRequests || null,
+      p_special_requests: data.specialRequests || "",
     });
 
     if (error) {
