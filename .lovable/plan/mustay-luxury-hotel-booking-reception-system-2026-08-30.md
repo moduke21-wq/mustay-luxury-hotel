@@ -17,9 +17,11 @@ Enable Lovable Cloud, then create:
 - `rooms` — room_number (unique), category, price_per_night, capacity, bed_type, amenities[], images[], status, floor.
 - `bookings` — booking_number (`MUSTAY-YYMMDD-XXXX`), verification_code, guest details, room_id, room_category, check-in/out dates + times, num_guests, total_amount, payment_status, status, special_requests.
 - Storage bucket `room-gallery`: public read, insert/delete restricted to staff roles.
-- Seed data in the migration: 12 operational rooms — Deluxe Suite NLe 800 (queen bed w/ netting, en-suite, AC) and Standard Room NLe 700 (double bed, AC) across ground and 1st floor. The 32 upstairs rooms are represented as a construction-pipeline figure in analytics, not as bookable rows.
+
+Seed data in the migration: 12 operational rooms — Deluxe Suite NLe 800 (queen bed w/ netting, en-suite, AC) and Standard Room NLe 700 (double bed, AC) across ground and 1st floor. The 32 upstairs rooms are represented as a construction-pipeline figure in analytics, not as bookable rows.
 
 Access rules:
+
 - Anyone can read rooms (needed for the public showcase) and create a pending booking.
 - Guests look up their own booking only through a server function that requires the exact booking number or verification code — the bookings table itself is never publicly readable, so no one can browse other guests' data.
 - Staff (any role) can read/update all bookings and rooms.
@@ -28,19 +30,19 @@ Admin account `dukuly1300@gmail.com` is created through the sign-up flow on firs
 
 ## Pages
 
-**Guest portal `/`** — hero ("Your Home Away From Home in Sierra Leone") with a floating date/lookup widget, capacity pill ("12 Operational Rooms Available Now | 32 Executive Rooms Under Construction"), room showcase cards with photos or a luxury placeholder graphic, amenities and capacity, plus the booking form (dates, check-in time, guests, room category, name, WhatsApp number, special requests, fixed "Pay Upon Arrival at Hotel"). Submitting creates a `pending` booking and shows the booking number with the "Reception will confirm via WhatsApp shortly" notice.
+**Guest portal `/**` — hero ("Your Home Away From Home in Sierra Leone") with a floating date/lookup widget, capacity pill ("12 Operational Rooms Available Now | 32 Executive Rooms Under Construction"), room showcase cards with photos or a luxury placeholder graphic, amenities and capacity, plus the booking form (dates, check-in time, guests, room category, name, WhatsApp number, special requests, fixed "Pay Upon Arrival at Hotel"). Submitting creates a `pending` booking and shows the booking number with the "Reception will confirm via WhatsApp shortly" notice.
 
-**`/booking-status`** — lookup by booking number or 6-digit code; shows status, and once confirmed a digital voucher with assigned room, verification code, amount due, and an "Open Confirmation on WhatsApp" button.
+`**/booking-status**` — lookup by booking number or 6-digit code; shows status, and once confirmed a digital voucher with assigned room, verification code, amount due, and an "Open Confirmation on WhatsApp" button.
 
-**`/admin/login`** — email/password sign-in; unauthenticated visits to any `/admin/*` route redirect here. Header reflects session state with a persistent log out in the sidebar.
+`**/admin/login**` — email/password sign-in; unauthenticated visits to any `/admin/*` route redirect here. Header reflects session state with a persistent log out in the sidebar.
 
-**`/admin/dashboard`** — metric cards: Active Rooms (12), Construction Pipeline (32), Available Today, Pending Bookings; plus recent activity.
+`**/admin/dashboard**` — metric cards: Active Rooms (12), Construction Pipeline (32), Available Today, Pending Bookings; plus recent activity.
 
-**`/admin/bookings`** — pending requests queue: review a request, pick an available physical room, Confirm Booking generates the 6-digit code and locks the room to `reserved`. Also cancel / no-show actions.
+`**/admin/bookings**` — pending requests queue: review a request, pick an available physical room, Confirm Booking generates the 6-digit code and locks the room to `reserved`. Also cancel / no-show actions.
 
-**`/admin/rooms`** — live room grid with colour-coded status (Available, Reserved, Occupied, Cleaning, Maintenance) and one-click status toggle; room editor modal with drag-and-drop photo upload to `room-gallery` and a thumbnail grid where each photo has a red delete button that removes it from storage and the DB array immediately.
+`**/admin/rooms**` — live room grid with colour-coded status (Available, Reserved, Occupied, Cleaning, Maintenance) and one-click status toggle; room editor modal with drag-and-drop photo upload to `room-gallery` and a thumbnail grid where each photo has a red delete button that removes it from storage and the DB array immediately.
 
-**`/admin/reception`** — fast search by guest name or 6-digit code with `Mark Paid & Check-In` and `Check-Out` actions that also move the room to occupied / cleaning.
+`**/admin/reception**` — fast search by guest name or 6-digit code with `Mark Paid & Check-In` and `Check-Out` actions that also move the room to occupied / cleaning.
 
 ## Technical notes
 
