@@ -104,8 +104,9 @@ export const updateBookingStatus = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const patch: Record<string, unknown> = { status: data.status };
-    if (data.markPaid) patch["payment_status"] = "paid";
+    const patch: { status: string; payment_status?: string } = { status: data.status };
+    if (data.markPaid) patch.payment_status = "paid";
+
 
     const { data: booking, error } = await supabase
       .from("bookings")
