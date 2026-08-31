@@ -108,9 +108,18 @@ function GuestPortal() {
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (name.trim().length < 2) return toast.error("Please enter your full name.");
-    if (phone.replace(/\D/g, "").length < 6) return toast.error("Please enter a valid WhatsApp number.");
-    if (nights < 1) return toast.error("Check-out must be after check-in.");
+    if (name.trim().length < 2) {
+      toast.error("Please enter your full name.");
+      return;
+    }
+    if (phone.replace(/\D/g, "").length < 6) {
+      toast.error("Please enter a valid WhatsApp number.");
+      return;
+    }
+    if (nights < 1) {
+      toast.error("Check-out must be after check-in.");
+      return;
+    }
     mutation.mutate({
       data: {
         guestName: name,
