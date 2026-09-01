@@ -41,7 +41,10 @@ function Dashboard() {
   const confirmMut = useMutation({
     mutationFn: (vars: { bookingId: string; roomId: string }) => confirmBooking({ data: vars }),
     onSuccess: (res) => {
-      if (!res.ok) return toast.error(res.message);
+      if (!res.ok) {
+        toast.error(res.message);
+        return;
+      }
       toast.success(`Confirmed — verification code ${res.code}`);
       invalidate();
     },
