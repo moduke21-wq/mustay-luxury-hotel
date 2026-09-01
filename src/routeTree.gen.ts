@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BookingStatusRouteImport } from './routes/booking-status'
+import { Route as AdminAuthenticatedRouteRouteImport } from './routes/admin/_authenticated/route'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const BookingStatusRoute = BookingStatusRouteImport.update({
   path: '/booking-status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAuthenticatedRouteRoute = AdminAuthenticatedRouteRouteImport.update({
+  id: '/admin/_authenticated',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
   id: '/admin/login',
   path: '/admin/login',
@@ -32,30 +38,39 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/booking-status': typeof BookingStatusRoute
+  '/admin': typeof AdminAuthenticatedRouteRoute
   '/admin/login': typeof AdminLoginRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/booking-status': typeof BookingStatusRoute
+  '/admin': typeof AdminAuthenticatedRouteRoute
   '/admin/login': typeof AdminLoginRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/booking-status': typeof BookingStatusRoute
+  '/admin/_authenticated': typeof AdminAuthenticatedRouteRoute
   '/admin/login': typeof AdminLoginRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/booking-status' | '/admin/login'
+  fullPaths: '/' | '/booking-status' | '/admin' | '/admin/login'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/booking-status' | '/admin/login'
-  id: '__root__' | '/' | '/booking-status' | '/admin/login'
+  to: '/' | '/booking-status' | '/admin' | '/admin/login'
+  id:
+    | '__root__'
+    | '/'
+    | '/booking-status'
+    | '/admin/_authenticated'
+    | '/admin/login'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BookingStatusRoute: typeof BookingStatusRoute
+  AdminAuthenticatedRouteRoute: typeof AdminAuthenticatedRouteRoute
   AdminLoginRoute: typeof AdminLoginRoute
 }
 
@@ -75,6 +90,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookingStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/_authenticated': {
+      id: '/admin/_authenticated'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminAuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/login': {
       id: '/admin/login'
       path: '/admin/login'
@@ -88,6 +110,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BookingStatusRoute: BookingStatusRoute,
+  AdminAuthenticatedRouteRoute: AdminAuthenticatedRouteRoute,
   AdminLoginRoute: AdminLoginRoute,
 }
 export const routeTree = rootRouteImport
