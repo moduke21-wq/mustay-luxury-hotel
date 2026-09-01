@@ -28,10 +28,26 @@ function AdminLogin() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const ADMIN_EMAIL = "dukuly1300@gmail.com";
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const address = email.trim().toLowerCase();
+    let { error } = await supabase.auth.signInWithPassword({ email: address, password });
+
+    // First-time setup: create the primary admin account on first sign-in attempt.
+    if (error && address === ADMIN_EMAIL) {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: address,
+        password,
+        options: { emailRedirectTo: window.location.origin, data: { full_name: "Mustay Admin" } },
+      });
+      if (!signUpError) {
+        ({ error } = await supabase.auth.signInWithPassword({ email: address, password }));
+      }
+    }
+
     setLoading(false);
     if (error) {
       toast.error(error.message);
