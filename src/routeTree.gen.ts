@@ -14,6 +14,7 @@ import { Route as BookingStatusRouteImport } from './routes/booking-status'
 import { Route as AdminAuthenticatedRouteRouteImport } from './routes/admin/_authenticated/route'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminAuthenticatedDashboardRouteImport } from './routes/admin/_authenticated/dashboard'
+import { Route as AdminAuthenticatedRoomsRouteImport } from './routes/admin/_authenticated/rooms'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -41,6 +42,11 @@ const AdminAuthenticatedDashboardRoute =
     path: '/dashboard',
     getParentRoute: () => AdminAuthenticatedRouteRoute,
   } as any)
+const AdminAuthenticatedRoomsRoute = AdminAuthenticatedRoomsRouteImport.update({
+  id: '/rooms',
+  path: '/rooms',
+  getParentRoute: () => AdminAuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -48,6 +54,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminAuthenticatedRouteRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/admin/dashboard': typeof AdminAuthenticatedDashboardRoute
+  '/admin/rooms': typeof AdminAuthenticatedRoomsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -55,6 +62,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminAuthenticatedRouteRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/admin/dashboard': typeof AdminAuthenticatedDashboardRoute
+  '/admin/rooms': typeof AdminAuthenticatedRoomsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -63,13 +71,25 @@ export interface FileRoutesById {
   '/admin/_authenticated': typeof AdminAuthenticatedRouteRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/admin/_authenticated/dashboard': typeof AdminAuthenticatedDashboardRoute
+  '/admin/_authenticated/rooms': typeof AdminAuthenticatedRoomsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/booking-status' | '/admin' | '/admin/login' | '/admin/dashboard'
+    | '/'
+    | '/booking-status'
+    | '/admin'
+    | '/admin/login'
+    | '/admin/dashboard'
+    | '/admin/rooms'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/booking-status' | '/admin' | '/admin/login' | '/admin/dashboard'
+  to:
+    | '/'
+    | '/booking-status'
+    | '/admin'
+    | '/admin/login'
+    | '/admin/dashboard'
+    | '/admin/rooms'
   id:
     | '__root__'
     | '/'
@@ -77,6 +97,7 @@ export interface FileRouteTypes {
     | '/admin/_authenticated'
     | '/admin/login'
     | '/admin/_authenticated/dashboard'
+    | '/admin/_authenticated/rooms'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -123,16 +144,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuthenticatedDashboardRouteImport
       parentRoute: typeof AdminAuthenticatedRouteRoute
     }
+    '/admin/_authenticated/rooms': {
+      id: '/admin/_authenticated/rooms'
+      path: '/rooms'
+      fullPath: '/admin/rooms'
+      preLoaderRoute: typeof AdminAuthenticatedRoomsRouteImport
+      parentRoute: typeof AdminAuthenticatedRouteRoute
+    }
   }
 }
 
 interface AdminAuthenticatedRouteRouteChildren {
   AdminAuthenticatedDashboardRoute: typeof AdminAuthenticatedDashboardRoute
+  AdminAuthenticatedRoomsRoute: typeof AdminAuthenticatedRoomsRoute
 }
 
 const AdminAuthenticatedRouteRouteChildren: AdminAuthenticatedRouteRouteChildren =
   {
     AdminAuthenticatedDashboardRoute: AdminAuthenticatedDashboardRoute,
+    AdminAuthenticatedRoomsRoute: AdminAuthenticatedRoomsRoute,
   }
 
 const AdminAuthenticatedRouteRouteWithChildren =
