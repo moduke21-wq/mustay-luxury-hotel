@@ -1,6 +1,6 @@
 export const HOTEL_NAME = "Mustay Luxury";
 export const HOTEL_TAGLINE = "Your Home Away From Home in Sierra Leone";
-export const HOTEL_WHATSAPP = "23278000000";
+export const HOTEL_WHATSAPP = "23276933022";
 export const OPERATIONAL_ROOMS = 12;
 export const CONSTRUCTION_ROOMS = 32;
 
