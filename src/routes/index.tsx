@@ -634,11 +634,11 @@ function LandingPage() {
             <p>A closer look at Mustay Luxury Hotel — rooms, interiors and the exterior.</p>
             <div className="gallery-filters">
               {[
-                ["all", "All"],
-                ["rooms", "Rooms"],
-                ["interior", "Interior"],
-                ["exterior", "Exterior"],
-              ].map(([value, label]) => (
+                { value: "all", label: "All" },
+                { value: "rooms", label: "Rooms" },
+                { value: "interior", label: "Interior" },
+                { value: "exterior", label: "Exterior" },
+              ].map(({ value, label }) => (
                 <button
                   key={value}
                   className={`g-filter${galleryFilter === value ? " active" : ""}`}
