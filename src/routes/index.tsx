@@ -190,7 +190,12 @@ function LandingPage() {
   const [formStatus, setFormStatus] = useState<{ kind: "success" | "error"; text: string } | null>(null);
 
   const selectedRoom = ROOM_SHOWCASE.find((r) => r.id === roomId) ?? null;
-  const selectedCountry = COUNTRIES.find((c) => c.name === country) ?? COUNTRIES[0];
+  const selectedCountry = COUNTRIES.find((c) => c.name === country) ?? {
+    name: "Sierra Leone",
+    currency: "SLE",
+    symbol: "Le",
+    rate: 1,
+  };
 
   const priceNote = useMemo(() => {
     if (!country || !selectedRoom) return "Select a country and room type to see the price.";
@@ -223,8 +228,9 @@ function LandingPage() {
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         clearTimeout(timeout);
-        if (d?.country_name && COUNTRIES.some((c) => c.name === d.country_name)) {
-          setCountry(d.country_name);
+        const detected: unknown = d?.country_name;
+        if (typeof detected === "string" && COUNTRIES.some((c) => c.name === detected)) {
+          setCountry(detected);
         }
       })
       .catch(() => {});
