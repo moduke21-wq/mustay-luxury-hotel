@@ -13,9 +13,9 @@ export type StaffMember = {
   isOwner: boolean;
 };
 
-async function assertAdmin(supabase: {
-  rpc: (fn: "has_role", args: { _user_id: string; _role: "admin" }) => Promise<{ data: unknown }>;
-}, userId: string) {
+type AuthedClient = { rpc: (fn: "has_role", args: { _user_id: string; _role: "admin" }) => PromiseLike<{ data: unknown }> };
+
+async function assertAdmin(supabase: AuthedClient, userId: string) {
   const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (data !== true) throw new Error("Only administrators can manage staff accounts.");
 }
