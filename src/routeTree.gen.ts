@@ -17,6 +17,7 @@ import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminAuthenticatedDashboardRouteImport } from './routes/admin/_authenticated/dashboard'
 import { Route as AdminAuthenticatedReceptionRouteImport } from './routes/admin/_authenticated/reception'
 import { Route as AdminAuthenticatedRoomsRouteImport } from './routes/admin/_authenticated/rooms'
+import { Route as ApiPublicSetupOwnerRouteImport } from './routes/api/public/setup-owner'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -60,6 +61,11 @@ const AdminAuthenticatedRoomsRoute = AdminAuthenticatedRoomsRouteImport.update({
   path: '/rooms',
   getParentRoute: () => AdminAuthenticatedRouteRoute,
 } as any)
+const ApiPublicSetupOwnerRoute = ApiPublicSetupOwnerRouteImport.update({
+  id: '/api/public/setup-owner',
+  path: '/api/public/setup-owner',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/admin/dashboard': typeof AdminAuthenticatedDashboardRoute
   '/admin/reception': typeof AdminAuthenticatedReceptionRoute
   '/admin/rooms': typeof AdminAuthenticatedRoomsRoute
+  '/api/public/setup-owner': typeof ApiPublicSetupOwnerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByTo {
   '/admin/dashboard': typeof AdminAuthenticatedDashboardRoute
   '/admin/reception': typeof AdminAuthenticatedReceptionRoute
   '/admin/rooms': typeof AdminAuthenticatedRoomsRoute
+  '/api/public/setup-owner': typeof ApiPublicSetupOwnerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -90,6 +98,7 @@ export interface FileRoutesById {
   '/admin/_authenticated/dashboard': typeof AdminAuthenticatedDashboardRoute
   '/admin/_authenticated/reception': typeof AdminAuthenticatedReceptionRoute
   '/admin/_authenticated/rooms': typeof AdminAuthenticatedRoomsRoute
+  '/api/public/setup-owner': typeof ApiPublicSetupOwnerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -102,6 +111,7 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/reception'
     | '/admin/rooms'
+    | '/api/public/setup-owner'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/reception'
     | '/admin/rooms'
+    | '/api/public/setup-owner'
   id:
     | '__root__'
     | '/'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/admin/_authenticated/dashboard'
     | '/admin/_authenticated/reception'
     | '/admin/_authenticated/rooms'
+    | '/api/public/setup-owner'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -129,6 +141,7 @@ export interface RootRouteChildren {
   AdminAuthenticatedRouteRoute: typeof AdminAuthenticatedRouteRouteWithChildren
   AdminLoginRoute: typeof AdminLoginRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  ApiPublicSetupOwnerRoute: typeof ApiPublicSetupOwnerRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -189,6 +202,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuthenticatedRoomsRouteImport
       parentRoute: typeof AdminAuthenticatedRouteRoute
     }
+    '/api/public/setup-owner': {
+      id: '/api/public/setup-owner'
+      path: '/api/public/setup-owner'
+      fullPath: '/api/public/setup-owner'
+      preLoaderRoute: typeof ApiPublicSetupOwnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -216,6 +236,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminAuthenticatedRouteRoute: AdminAuthenticatedRouteRouteWithChildren,
   AdminLoginRoute: AdminLoginRoute,
   AdminIndexRoute: AdminIndexRoute,
+  ApiPublicSetupOwnerRoute: ApiPublicSetupOwnerRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
