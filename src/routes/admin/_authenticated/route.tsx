@@ -19,6 +19,8 @@ const NAV = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/rooms", label: "Rooms", icon: BedDouble },
   { to: "/admin/reception", label: "Reception", icon: Search },
+  { to: "/admin/settings", label: "Website", icon: Settings },
+  { to: "/admin/staff", label: "Team", icon: Users },
 ] as const;
 
 function AdminLayout() {
