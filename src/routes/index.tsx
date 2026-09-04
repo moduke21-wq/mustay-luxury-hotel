@@ -19,20 +19,25 @@ import galleryCeiling from "@/assets/mustay/gallery-ceiling.asset.json";
 import galleryBed2 from "@/assets/mustay/gallery-bed2.asset.json";
 
 import { getPublicRooms, createGuestBooking } from "@/lib/public.functions";
+import { getSiteSettings } from "@/lib/settings.functions";
 import { HOTEL_WHATSAPP, nightsBetween } from "@/lib/hotel";
-
-const WA = HOTEL_WHATSAPP;
-const WA_ENQUIRE = `https://wa.me/${WA}?text=${encodeURIComponent(
-  "Hello Mustay Luxury Hotel, I'd like to enquire about a stay.",
-)}`;
 
 const roomsQuery = queryOptions({
   queryKey: ["public-rooms"],
   queryFn: () => getPublicRooms(),
 });
 
+const settingsQuery = queryOptions({
+  queryKey: ["site-settings"],
+  queryFn: () => getSiteSettings(),
+});
+
 export const Route = createFileRoute("/")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(roomsQuery),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(roomsQuery),
+      context.queryClient.ensureQueryData(settingsQuery),
+    ]),
   head: () => ({
     meta: [
       { title: "Mustay Luxury Hotel — Bo City, Sierra Leone" },
