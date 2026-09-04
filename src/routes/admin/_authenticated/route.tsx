@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { BedDouble, LayoutDashboard, LogOut, Search } from "lucide-react";
+import { BedDouble, LayoutDashboard, LogOut, Search, Settings, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,7 +73,7 @@ function AdminLayout() {
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-3 border-t border-border bg-background md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-5 border-t border-border bg-background md:hidden">
         {NAV.map(({ to, label, icon: Icon }) => (
           <Link
             key={to}
