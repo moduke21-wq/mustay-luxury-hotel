@@ -18,6 +18,7 @@ import { Route as AdminAuthenticatedDashboardRouteImport } from './routes/admin/
 import { Route as AdminAuthenticatedReceptionRouteImport } from './routes/admin/_authenticated/reception'
 import { Route as AdminAuthenticatedRoomsRouteImport } from './routes/admin/_authenticated/rooms'
 import { Route as AdminAuthenticatedSettingsRouteImport } from './routes/admin/_authenticated/settings'
+import { Route as AdminAuthenticatedStaffRouteImport } from './routes/admin/_authenticated/staff'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -67,6 +68,11 @@ const AdminAuthenticatedSettingsRoute =
     path: '/settings',
     getParentRoute: () => AdminAuthenticatedRouteRoute,
   } as any)
+const AdminAuthenticatedStaffRoute = AdminAuthenticatedStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => AdminAuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/admin/reception': typeof AdminAuthenticatedReceptionRoute
   '/admin/rooms': typeof AdminAuthenticatedRoomsRoute
   '/admin/settings': typeof AdminAuthenticatedSettingsRoute
+  '/admin/staff': typeof AdminAuthenticatedStaffRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/admin/reception': typeof AdminAuthenticatedReceptionRoute
   '/admin/rooms': typeof AdminAuthenticatedRoomsRoute
   '/admin/settings': typeof AdminAuthenticatedSettingsRoute
+  '/admin/staff': typeof AdminAuthenticatedStaffRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/admin/_authenticated/reception': typeof AdminAuthenticatedReceptionRoute
   '/admin/_authenticated/rooms': typeof AdminAuthenticatedRoomsRoute
   '/admin/_authenticated/settings': typeof AdminAuthenticatedSettingsRoute
+  '/admin/_authenticated/staff': typeof AdminAuthenticatedStaffRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -113,6 +122,7 @@ export interface FileRouteTypes {
     | '/admin/reception'
     | '/admin/rooms'
     | '/admin/settings'
+    | '/admin/staff'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -123,6 +133,7 @@ export interface FileRouteTypes {
     | '/admin/reception'
     | '/admin/rooms'
     | '/admin/settings'
+    | '/admin/staff'
   id:
     | '__root__'
     | '/'
@@ -134,6 +145,7 @@ export interface FileRouteTypes {
     | '/admin/_authenticated/reception'
     | '/admin/_authenticated/rooms'
     | '/admin/_authenticated/settings'
+    | '/admin/_authenticated/staff'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -209,6 +221,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuthenticatedSettingsRouteImport
       parentRoute: typeof AdminAuthenticatedRouteRoute
     }
+    '/admin/_authenticated/staff': {
+      id: '/admin/_authenticated/staff'
+      path: '/staff'
+      fullPath: '/admin/staff'
+      preLoaderRoute: typeof AdminAuthenticatedStaffRouteImport
+      parentRoute: typeof AdminAuthenticatedRouteRoute
+    }
   }
 }
 
@@ -217,6 +236,7 @@ interface AdminAuthenticatedRouteRouteChildren {
   AdminAuthenticatedReceptionRoute: typeof AdminAuthenticatedReceptionRoute
   AdminAuthenticatedRoomsRoute: typeof AdminAuthenticatedRoomsRoute
   AdminAuthenticatedSettingsRoute: typeof AdminAuthenticatedSettingsRoute
+  AdminAuthenticatedStaffRoute: typeof AdminAuthenticatedStaffRoute
 }
 
 const AdminAuthenticatedRouteRouteChildren: AdminAuthenticatedRouteRouteChildren =
@@ -225,6 +245,7 @@ const AdminAuthenticatedRouteRouteChildren: AdminAuthenticatedRouteRouteChildren
     AdminAuthenticatedReceptionRoute: AdminAuthenticatedReceptionRoute,
     AdminAuthenticatedRoomsRoute: AdminAuthenticatedRoomsRoute,
     AdminAuthenticatedSettingsRoute: AdminAuthenticatedSettingsRoute,
+    AdminAuthenticatedStaffRoute: AdminAuthenticatedStaffRoute,
   }
 
 const AdminAuthenticatedRouteRouteWithChildren =
