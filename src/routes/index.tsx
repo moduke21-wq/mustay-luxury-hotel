@@ -926,9 +926,17 @@ function LandingPage() {
               <a href="#contact">Contact</a>
               <Link to="/booking-status">My Booking</Link>
             </div>
+            <div className="footer-col">
+              <h4>Management</h4>
+              <Link to="/admin/login">Admin Panel</Link>
+              <Link to="/admin/dashboard">Staff Dashboard</Link>
+            </div>
           </div>
           <div className="footer-bottom">
             <span>© 2026 Mustay Luxury Hotel. All Rights Reserved.</span>
+            <Link to="/admin/login" style={{ color: "inherit", textDecoration: "underline" }}>
+              Admin Panel
+            </Link>
           </div>
         </div>
       </footer>
