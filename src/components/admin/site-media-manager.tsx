@@ -93,7 +93,7 @@ function MediaRoomEditor({
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <Label>Room {draft.room_number}</Label>
+          <Label>Room {draft.room_number} type</Label>
           <Input value={draft.category} onChange={(e) => set("category", e.target.value)} />
         </div>
         <div>
@@ -283,11 +283,18 @@ export function SiteMediaManager() {
         </div>
       ) : null}
       <div className="mt-6 rounded-lg border border-gold/30 bg-gold/5 p-4">
-        <h3 className="font-display text-xl font-semibold">Rooms: price and guest content</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Staff and admins can update the nightly price, description, and amenities here while
-          viewing the current room image.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="font-display text-xl font-semibold">Room settings</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Edit what each room offers and its nightly price directly beside the room image.
+              Changes appear on the website after saving.
+            </p>
+          </div>
+          <span className="rounded-full bg-gold/15 px-3 py-1 text-xs font-medium text-foreground">
+            Price + guest content
+          </span>
+        </div>
         {roomsQuery.isLoading ? (
           <p className="mt-3 text-sm text-muted-foreground">Loading rooms…</p>
         ) : null}
