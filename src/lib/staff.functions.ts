@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertAdmin } from "@/lib/admin-auth";
 
-export const OWNER_EMAIL = "dukuly1300@gmail.com";
+export const OWNER_EMAIL = "mustaybookkeepingservices@gmail.com";
 
 export type StaffMember = {
   id: string;
@@ -43,6 +43,41 @@ export const listStaff = createServerFn({ method: "GET" })
       bannedUntil: authUsers?.users.find((u) => u.id === p.id)?.banned_until ?? null,
       lastSignInAt: authUsers?.users.find((u) => u.id === p.id)?.last_sign_in_at ?? null,
     })) as StaffMember[];
+  });
+
+export const inviteOwner = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await assertAdmin(supabaseAdmin, context.userId);
+
+    const { data: invited, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(OWNER_EMAIL, {
+      data: { full_name: "Mustay Luxury Owner", is_owner: true },
+    });
+    if (error || !invited.user) {
+      const duplicate = error?.message.toLowerCase().includes("already") || error?.status === 422;
+      return {
+        ok: false as const,
+        message: duplicate
+          ? "That owner account already exists. Use Forgot password on the login page to set or reset its password."
+          : (error?.message ?? "Could not send the owner setup invitation."),
+      };
+    }
+
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .upsert(
+        { id: invited.user.id, email: OWNER_EMAIL, full_name: "Mustay Luxury Owner" },
+        { onConflict: "id" },
+      );
+    if (profileError) return { ok: false as const, message: "Owner profile could not be saved." };
+
+    const { error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: invited.user.id, role: "admin" }, { onConflict: "user_id,role" });
+    if (roleError) return { ok: false as const, message: "Owner permissions could not be saved." };
+
+    return { ok: true as const };
   });
 
 export const createStaff = createServerFn({ method: "POST" })

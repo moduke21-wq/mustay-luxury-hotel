@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   createStaff,
+  inviteOwner,
   listStaff,
   removeStaff,
   setStaffBan,
@@ -46,6 +47,17 @@ function StaffPage() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<Role>("admin");
 
+  const ownerInviteMut = useMutation({
+    mutationFn: () => inviteOwner({ data: undefined }),
+    onSuccess: (res) => {
+      if (res.ok) {
+        toast.success("Owner setup invitation sent to mustaybookkeepingservices@gmail.com");
+        invalidate();
+      } else toast.error(res.message);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const createMut = useMutation({
     mutationFn: () => createStaff({ data: { email, fullName, password, role } }),
     onSuccess: (res) => {
@@ -68,6 +80,25 @@ function StaffPage() {
       </p>
 
       {error && <p className="mt-4 text-sm text-red-600">{(error as Error).message}</p>}
+
+      <section className="mt-6 rounded-xl border border-gold/30 bg-gold/5 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-display text-xl font-semibold">Super Admin / Owner</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Send a secure password setup invitation to mustaybookkeepingservices@gmail.com.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => ownerInviteMut.mutate()}
+            disabled={ownerInviteMut.isPending}
+          >
+            {ownerInviteMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Send owner invitation
+          </Button>
+        </div>
+      </section>
 
       <section className="mt-6 rounded-xl border border-border bg-card p-4">
         <h2 className="flex items-center gap-2 font-display text-xl font-semibold">
