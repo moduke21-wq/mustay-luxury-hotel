@@ -139,6 +139,64 @@ function MediaRoomEditor({
   );
 }
 
+function MediaSlotRoomSettings({
+  room,
+  saving,
+  onSave,
+}: {
+  room: any;
+  saving: boolean;
+  onSave: (room: any) => void;
+}) {
+  const [price, setPrice] = useState(String(room.price_per_night ?? ""));
+  const [offers, setOffers] = useState((room.amenities ?? []).join(", "));
+
+  return (
+    <div className="mt-3 rounded-md border border-gold/30 bg-gold/5 p-3">
+      <p className="text-sm font-semibold">Room price and offers</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_1.5fr_auto] sm:items-end">
+        <div>
+          <Label htmlFor={`price-${room.id}`}>Price per night (NLe)</Label>
+          <Input
+            id={`price-${room.id}`}
+            inputMode="decimal"
+            value={price}
+            onChange={(event) => setPrice(event.target.value)}
+          />
+        </div>
+        <div>
+          <Label htmlFor={`offers-${room.id}`}>What it offers</Label>
+          <Input
+            id={`offers-${room.id}`}
+            value={offers}
+            onChange={(event) => setOffers(event.target.value)}
+            placeholder="Wi-Fi, breakfast, air conditioning"
+          />
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          className="bg-navy text-background hover:bg-navy/90"
+          disabled={saving}
+          onClick={() =>
+            onSave({
+              ...room,
+              price_per_night: Number(price),
+              amenities: offers
+                .split(",")
+                .map((item) => item.trim())
+                .filter(Boolean),
+            })
+          }
+        >
+          {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+          Save
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function SiteMediaManager() {
   const queryClient = useQueryClient();
   const {
@@ -341,6 +399,23 @@ export function SiteMediaManager() {
                   <p className="font-medium">{definition.label}</p>
                   <p className="text-xs text-muted-foreground">{definition.help}</p>
                 </div>
+                {definition.slot === "standard-room" || definition.slot === "deluxe-room"
+                  ? (() => {
+                      const room = (roomsQuery.data ?? []).find((candidate: any) => {
+                        const category = String(candidate.category ?? "").toLowerCase();
+                        return definition.slot === "deluxe-room"
+                          ? category.includes("deluxe")
+                          : category.includes("standard");
+                      });
+                      return room ? (
+                        <MediaSlotRoomSettings
+                          room={room}
+                          saving={saveRoom.isPending}
+                          onSave={(next) => saveRoom.mutate(next)}
+                        />
+                      ) : null;
+                    })()
+                  : null}
                 <Label
                   htmlFor={inputId}
                   className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-accent"
