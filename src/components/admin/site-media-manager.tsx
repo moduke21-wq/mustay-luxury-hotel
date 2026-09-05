@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { getRoomManagement, updateRoom } from "@/lib/admin.functions";
 import { getSiteMedia } from "@/lib/settings.functions";
 
 const ADMIN_BACKGROUND_SLOT = "admin-background";
@@ -63,81 +62,6 @@ type MediaRow = {
   alt_text: string;
   display_order: number;
 };
-
-function MediaRoomEditor({
-  room,
-  saving,
-  onSave,
-}: {
-  room: any;
-  saving: boolean;
-  onSave: (room: any) => void;
-}) {
-  const [draft, setDraft] = useState(room);
-  const set = (key: string, value: string) =>
-    setDraft((current: any) => ({ ...current, [key]: value }));
-  return (
-    <div className="grid gap-3 rounded-md border border-border bg-background p-3 md:grid-cols-[160px_1fr]">
-      <div className="overflow-hidden rounded-md bg-muted">
-        {draft.imageUrls?.[0] ? (
-          <img
-            src={draft.imageUrls[0]}
-            alt={`Room ${draft.room_number}`}
-            className="h-28 w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-28 items-center justify-center text-xs text-muted-foreground">
-            No room image
-          </div>
-        )}
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <Label>Room {draft.room_number} type</Label>
-          <Input value={draft.category} onChange={(e) => set("category", e.target.value)} />
-        </div>
-        <div>
-          <Label>Price per night (NLe)</Label>
-          <Input
-            inputMode="numeric"
-            value={draft.price_per_night}
-            onChange={(e) => set("price_per_night", e.target.value)}
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <Label>Guest description</Label>
-          <Input
-            value={draft.description ?? ""}
-            onChange={(e) => set("description", e.target.value)}
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <Label>Amenities, separated by commas</Label>
-          <Input
-            value={(draft.amenities ?? []).join(", ")}
-            onChange={(e) =>
-              set(
-                "amenities",
-                e.target.value
-                  .split(",")
-                  .map((item: string) => item.trim())
-                  .filter(Boolean),
-              )
-            }
-          />
-        </div>
-        <Button
-          type="button"
-          className="bg-navy text-background hover:bg-navy/90 sm:col-span-2"
-          disabled={saving}
-          onClick={() => onSave(draft)}
-        >
-          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Save price and content
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 function MediaSlotRoomSettings({
   room,
@@ -209,32 +133,6 @@ export function SiteMediaManager() {
     queryFn: async () => (await getSiteMedia()) as MediaRow[],
   });
   const [busy, setBusy] = useState<string | null>(null);
-  const roomsQuery = useQuery({
-    queryKey: ["media-room-management"],
-    queryFn: () => getRoomManagement(),
-  });
-  const saveRoom = useMutation({
-    mutationFn: (room: any) =>
-      updateRoom({
-        data: {
-          id: room.id,
-          room_number: room.room_number,
-          category: room.category,
-          price_per_night: Number(room.price_per_night),
-          capacity: Number(room.capacity),
-          bed_type: room.bed_type,
-          floor: Number(room.floor),
-          description: room.description ?? "",
-          amenities: room.amenities ?? [],
-        },
-      }),
-    onSuccess: () => {
-      toast.success("Room price and content saved");
-      queryClient.invalidateQueries({ queryKey: ["media-room-management"] });
-    },
-    onError: (error: Error) => toast.error(error.message),
-  });
-
   async function upload(slot: string, file: File) {
     if (!file.type.startsWith("image/")) {
       toast.error("Please choose an image file.");
@@ -340,38 +238,6 @@ export function SiteMediaManager() {
           </div>
         </div>
       ) : null}
-      <div className="mt-6 rounded-lg border border-gold/30 bg-gold/5 p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 className="font-display text-xl font-semibold">Room settings</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Edit what each room offers and its nightly price directly beside the room image.
-              Changes appear on the website after saving.
-            </p>
-          </div>
-          <span className="rounded-full bg-gold/15 px-3 py-1 text-xs font-medium text-foreground">
-            Price + guest content
-          </span>
-        </div>
-        {roomsQuery.isLoading ? (
-          <p className="mt-3 text-sm text-muted-foreground">Loading rooms…</p>
-        ) : null}
-        {roomsQuery.isError ? (
-          <p className="mt-3 text-sm text-destructive">
-            Could not load room settings. Refresh and try again.
-          </p>
-        ) : null}
-        <div className="mt-4 grid gap-4">
-          {(roomsQuery.data ?? []).map((room: any) => (
-            <MediaRoomEditor
-              key={room.id}
-              room={room}
-              saving={saveRoom.isPending}
-              onSave={(next) => saveRoom.mutate(next)}
-            />
-          ))}
-        </div>
-      </div>
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         {MEDIA_SLOTS.map((definition) => {
           const item = media.find((entry) => entry.slot === definition.slot);
@@ -399,23 +265,6 @@ export function SiteMediaManager() {
                   <p className="font-medium">{definition.label}</p>
                   <p className="text-xs text-muted-foreground">{definition.help}</p>
                 </div>
-                {definition.slot === "standard-room" || definition.slot === "deluxe-room"
-                  ? (() => {
-                      const room = (roomsQuery.data ?? []).find((candidate: any) => {
-                        const category = String(candidate.category ?? "").toLowerCase();
-                        return definition.slot === "deluxe-room"
-                          ? category.includes("deluxe")
-                          : category.includes("standard");
-                      });
-                      return room ? (
-                        <MediaSlotRoomSettings
-                          room={room}
-                          saving={saveRoom.isPending}
-                          onSave={(next) => saveRoom.mutate(next)}
-                        />
-                      ) : null;
-                    })()
-                  : null}
                 <Label
                   htmlFor={inputId}
                   className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm hover:bg-accent"

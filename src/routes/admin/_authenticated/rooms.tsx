@@ -128,6 +128,36 @@ function RoomsPage() {
         </div>
       )}
 
+      <section className="mt-6 rounded-xl border border-gold/30 bg-gold/5 p-4">
+        <h2 className="font-display text-2xl font-semibold">Standard and Deluxe settings</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Change the price and what each room type offers. Staff and admins can save these
+          guest-facing details here.
+        </p>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          {["Standard Room", "Deluxe Suite"].map((category) => {
+            const room = rooms.find(
+              (item) => item.category.toLowerCase() === category.toLowerCase(),
+            );
+            return room ? (
+              <RoomTypeSettings key={room.id} room={room} onSaved={invalidate} />
+            ) : (
+              <p
+                key={category}
+                className="rounded-md border border-border p-4 text-sm text-muted-foreground"
+              >
+                No {category} room found.
+              </p>
+            );
+          })}
+        </div>
+      </section>
+
+      <p className="mt-6 rounded-lg border border-gold/30 bg-gold/5 p-3 text-sm text-muted-foreground">
+        Standard Room and Deluxe Suite pricing and guest offers are managed above. Use the room
+        cards below for photos, housekeeping status, and complete room details.
+      </p>
+
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {rooms.map((room) => {
           const preview = room.imageUrls[0] ?? SITE_IMAGE[room.category];
@@ -247,6 +277,87 @@ function RoomsPage() {
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function RoomTypeSettings({ room, onSaved }: { room: AdminRoom; onSaved: () => void }) {
+  const [price, setPrice] = useState(String(room.price_per_night));
+  const [description, setDescription] = useState(room.description ?? "");
+  const [amenities, setAmenities] = useState((room.amenities ?? []).join(", "));
+  const mutation = useMutation({
+    mutationFn: () =>
+      updateRoom({
+        data: {
+          id: room.id,
+          room_number: room.room_number,
+          category: room.category,
+          price_per_night: Number(price),
+          capacity: room.capacity,
+          bed_type: room.bed_type,
+          floor: room.floor,
+          description,
+          amenities: amenities
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
+        },
+      }),
+    onSuccess: (result) => {
+      if (!result.ok) return toast.error(result.message);
+      toast.success(`${room.category} settings saved`);
+      onSaved();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+  return (
+    <div className="rounded-lg border border-border bg-card p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="font-display text-xl font-semibold">{room.category}</p>
+          <p className="text-xs text-muted-foreground">Room {room.room_number}</p>
+        </div>
+        <span className="rounded-full bg-gold/15 px-3 py-1 text-sm font-semibold">
+          {formatNLe(room.price_per_night)}
+        </span>
+      </div>
+      <div className="mt-3 grid gap-3">
+        <div>
+          <Label htmlFor={`type-price-${room.id}`}>Price per night (NLe)</Label>
+          <Input
+            id={`type-price-${room.id}`}
+            inputMode="decimal"
+            value={price}
+            onChange={(event) => setPrice(event.target.value)}
+          />
+        </div>
+        <div>
+          <Label htmlFor={`type-description-${room.id}`}>What this room offers</Label>
+          <Textarea
+            id={`type-description-${room.id}`}
+            rows={3}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+          />
+        </div>
+        <div>
+          <Label htmlFor={`type-amenities-${room.id}`}>Features, separated by commas</Label>
+          <Input
+            id={`type-amenities-${room.id}`}
+            value={amenities}
+            onChange={(event) => setAmenities(event.target.value)}
+          />
+        </div>
+        <Button
+          type="button"
+          className="bg-navy text-background hover:bg-navy/90"
+          disabled={mutation.isPending}
+          onClick={() => mutation.mutate()}
+        >
+          {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Save{" "}
+          {room.category} settings
+        </Button>
+      </div>
     </div>
   );
 }

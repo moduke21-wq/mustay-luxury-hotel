@@ -11,6 +11,11 @@ export const attachSupabaseAuth = createMiddleware({ type: "function" }).client(
       const { data: refreshed, error } = await supabase.auth.refreshSession();
       if (!error && refreshed.session) data = refreshed;
     }
+    if (!data.session) {
+      await supabase.auth.getUser();
+      const retry = await supabase.auth.getSession();
+      data = retry.data;
+    }
     const token = data.session?.access_token;
     return next({
       headers: token ? { Authorization: `Bearer ${token}` } : {},
