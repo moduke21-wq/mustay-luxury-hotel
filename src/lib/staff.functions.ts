@@ -54,22 +54,6 @@ export const listStaff = createServerFn({ method: "GET" }).handler(async () => {
 
 export const inviteOwner = createServerFn({ method: "POST" }).handler(async () => {
   await requireAdminSession();
-  const existing = await auth.api.listUsers({
-    headers: requestHeaders(),
-    query: {
-      searchValue: OWNER_EMAIL,
-      searchField: "email",
-      searchOperator: "contains",
-      limit: 10,
-    },
-  });
-  if (existing.users.some((user) => user.email.toLowerCase() === OWNER_EMAIL)) {
-    return {
-      ok: false as const,
-      message: "That owner account already exists. Use the existing account to sign in.",
-    };
-  }
-
   const bootstrapPassword = process.env.OWNER_INITIAL_PASSWORD;
   if (!bootstrapPassword) {
     return {
@@ -78,7 +62,37 @@ export const inviteOwner = createServerFn({ method: "POST" }).handler(async () =
     };
   }
 
+  const existing = await auth.api.listUsers({
+    headers: new Headers(),
+    query: {
+      searchValue: OWNER_EMAIL,
+      searchField: "email",
+      searchOperator: "contains",
+      limit: 10,
+    },
+  });
+  const existingOwner = existing.users.find((user) => user.email.toLowerCase() === OWNER_EMAIL);
+  if (existingOwner) {
+    await auth.api.setRole({
+      headers: new Headers(),
+      body: { userId: existingOwner.id, role: "super_admin" },
+    });
+    return {
+      ok: true as const,
+      message: "Super Admin account already exists and its role is confirmed.",
+      userId: existingOwner.id,
+    };
+  }
+
+  if (!bootstrapPassword) {
+    return {
+      ok: false as const,
+      message: "Owner setup is unavailable until OWNER_INITIAL_PASSWORD is configured.",
+    };
+  }
+
   const created = await auth.api.createUser({
+    headers: new Headers(),
     body: {
       email: OWNER_EMAIL,
       password: bootstrapPassword,
