@@ -493,10 +493,8 @@ function LandingPage() {
           <h2>A comfortable stay. A memorable experience.</h2>
           <div className="welcome-right">
             <p>
-              Mustay Luxury Hotel is located at Abu Street in the Shelmingo area of Manjama Section, Bo
-              City, Sierra Leone. Whether you're visiting Bo for business, spending time with family,
-              enjoying a getaway with your loved ones, or simply looking for a quiet place to relax,
-              Mustay Luxury Hotel provides comfortable accommodation and warm hospitality.
+              {aboutText ||
+                "Mustay Luxury Hotel is located at Abu Street in the Shelmingo area of Manjama Section, Bo City, Sierra Leone. Whether you're visiting Bo for business, spending time with family, enjoying a getaway with your loved ones, or simply looking for a quiet place to relax, Mustay Luxury Hotel provides comfortable accommodation and warm hospitality."}
             </p>
             <a href="#rooms" className="btn-outline">
               Discover Mustay
