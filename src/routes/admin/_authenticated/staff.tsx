@@ -49,6 +49,11 @@ function StaffPage() {
 
   const createMut = useMutation({
     mutationFn: async () => {
+      const firstAttempt = await createStaff({ data: { email, fullName, password, role } });
+      if (firstAttempt.ok || !firstAttempt.message?.toLowerCase().includes("unauthorized")) {
+        return firstAttempt;
+      }
+
       const refreshed = await supabase.auth.refreshSession();
       if (refreshed.error || !refreshed.data.session) {
         throw new Error(
