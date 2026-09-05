@@ -4,12 +4,14 @@ import { BedDouble, LayoutDashboard, LogOut, Search, Settings, Users } from "luc
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { isAdmin } from "@/lib/admin-auth";
 
 export const Route = createFileRoute("/admin/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/admin/login" });
+    if (!(await isAdmin(supabase, data.user.id))) throw redirect({ to: "/" });
     return { user: data.user };
   },
   component: AdminLayout,
