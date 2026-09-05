@@ -609,9 +609,8 @@ function LandingPage() {
             <div className="status-tag">Under Construction</div>
             <h2>A New Chapter for Mustay</h2>
             <p>
-              Work is underway on our next building in Bo City — a larger property designed to bring
-              even more comfort to every stay, complete with a Club &amp; Restaurant and an elevator
-              for easy access to every floor.
+              {expansionText ||
+                "Work is underway on our next building in Bo City — a larger property designed to bring even more comfort to every stay, complete with a Club & Restaurant and an elevator for easy access to every floor."}
             </p>
             <div className="expansion-features">
               <div>
