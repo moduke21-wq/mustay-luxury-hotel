@@ -46,10 +46,10 @@ export const listStaff = createServerFn({ method: "GET" })
   });
 
 export const createStaff = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z
       .object({
+        accessToken: z.string().min(20),
         email: z.string().trim().email().max(255),
         password: z.string().min(8).max(72),
         fullName: z.string().trim().max(120).optional().or(z.literal("")),
@@ -57,9 +57,18 @@ export const createStaff = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase, context.userId);
+  .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: authenticated, error: sessionError } = await supabaseAdmin.auth.getUser(
+      data.accessToken,
+    );
+    if (sessionError || !authenticated.user) {
+      return {
+        ok: false as const,
+        message: "Your admin session is invalid or expired. Please sign in again.",
+      };
+    }
+    await assertAdmin(supabaseAdmin, authenticated.user.id);
     const email = data.email.toLowerCase();
 
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
