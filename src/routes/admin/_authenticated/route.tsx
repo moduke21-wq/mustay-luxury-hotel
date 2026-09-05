@@ -14,14 +14,17 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { isAdmin } from "@/lib/admin-auth";
+import { authClient } from "@/lib/better-auth-client";
+import { requireAdminSession } from "@/lib/better-auth.functions";
 
 export const Route = createFileRoute("/admin/_authenticated")({
   beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/admin/login" });
-    if (!(await isAdmin(supabase, data.user.id))) throw redirect({ to: "/" });
-    return { user: data.user };
+    try {
+      const session = await requireAdminSession();
+      return { user: session.user };
+    } catch {
+      throw redirect({ to: "/admin/login" });
+    }
   },
   component: AdminLayout,
 });
@@ -41,7 +44,7 @@ function AdminLayout() {
   async function signOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
-    await supabase.auth.signOut();
+    await authClient.signOut();
     navigate({ to: "/admin/login", replace: true });
   }
 
@@ -58,14 +61,11 @@ function AdminLayout() {
     document.documentElement.classList.toggle("dark", isDark);
 
     let active = true;
-    void supabase.auth.getUser().then(({ data }) => {
-      if (!active || !data.user) return;
-      setAdminEmail(data.user.email ?? "");
-      setAdminName(
-        String(
-          data.user.user_metadata?.full_name ?? data.user.user_metadata?.name ?? "CEO Mustapha",
-        ),
-      );
+    void authClient.getSession().then(({ data }) => {
+      const user = data?.user;
+      if (!active || !user) return;
+      setAdminEmail(user.email ?? "");
+      setAdminName(String(user.name ?? "CEO Mustapha"));
     });
     void supabase
       .from("site_media" as never)
