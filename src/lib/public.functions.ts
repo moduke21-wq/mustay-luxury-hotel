@@ -23,11 +23,14 @@ function publicClient() {
 
 async function signImages(paths: string[]): Promise<string[]> {
   if (paths.length === 0) return [];
+  const remote = paths.filter((path) => /^https?:\/\//i.test(path));
+  const storagePaths = paths.filter((path) => !/^https?:\/\//i.test(path));
+  if (storagePaths.length === 0) return remote;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin.storage
     .from("room-gallery")
-    .createSignedUrls(paths, 60 * 60 * 24 * 7);
-  return (data ?? []).map((d) => d.signedUrl).filter(Boolean) as string[];
+    .createSignedUrls(storagePaths, 60 * 60 * 24 * 7);
+  return [...remote, ...((data ?? []).map((d) => d.signedUrl).filter(Boolean) as string[])];
 }
 
 export type PublicCategory = {
@@ -46,7 +49,9 @@ export const getPublicRooms = createServerFn({ method: "GET" }).handler(async ()
   const supabase = publicClient();
   const { data, error } = await supabase
     .from("rooms")
-    .select("room_number, category, price_per_night, capacity, bed_type, amenities, images, status, description")
+    .select(
+      "room_number, category, price_per_night, capacity, bed_type, amenities, images, status, description",
+    )
     .order("room_number");
 
   if (error) return { categories: [] as PublicCategory[], availableNow: 0 };
@@ -123,7 +128,10 @@ export const createGuestBooking = createServerFn({ method: "POST" })
 
     if (error) {
       console.error("create_guest_booking failed", error.message);
-      return { ok: false as const, message: "We could not save your request. Please check your dates and try again." };
+      return {
+        ok: false as const,
+        message: "We could not save your request. Please check your dates and try again.",
+      };
     }
 
     const row = Array.isArray(result) ? result[0] : result;
@@ -135,7 +143,9 @@ export const createGuestBooking = createServerFn({ method: "POST" })
   });
 
 export const lookupBooking = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => z.object({ reference: z.string().trim().min(6).max(40) }).parse(data))
+  .inputValidator((data: unknown) =>
+    z.object({ reference: z.string().trim().min(6).max(40) }).parse(data),
+  )
   .handler(async ({ data }) => {
     const supabase = publicClient();
     const { data: result, error } = await supabase.rpc("lookup_booking", {

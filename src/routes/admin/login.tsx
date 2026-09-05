@@ -9,11 +9,13 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/login")({
-  ssr: false,
   head: () => ({
     meta: [
       { title: "Staff Login — Mustay Luxury" },
-      { name: "description", content: "Secure sign-in for Mustay Luxury reception and management staff." },
+      {
+        name: "description",
+        content: "Secure sign-in for Mustay Luxury reception and management staff.",
+      },
       { name: "robots", content: "noindex" },
       { property: "og:title", content: "Staff Login — Mustay Luxury" },
       { property: "og:description", content: "Secure sign-in for Mustay Luxury staff." },
@@ -27,6 +29,26 @@ function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+
+  async function sendReset() {
+    const address = email.trim().toLowerCase();
+    if (!address) {
+      toast.error("Enter your email address first");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(address, {
+      redirectTo: `${window.location.origin}/admin/login`,
+    });
+    setLoading(false);
+    if (error) {
+      toast.error("We could not send a reset email. Check the address and try again.");
+      return;
+    }
+    setResetSent(true);
+    toast.success("If that account exists, a reset email has been sent.");
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -75,13 +97,37 @@ function AdminLogin() {
               required
             />
           </div>
-          <Button type="submit" disabled={loading} className="w-full bg-gold text-gold-foreground hover:bg-gold/90">
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
+          <button
+            type="button"
+            onClick={sendReset}
+            disabled={loading}
+            className="text-right text-xs text-muted-foreground hover:text-foreground hover:underline"
+          >
+            Forgot password?
+          </button>
+          {resetSent && (
+            <p className="text-xs text-muted-foreground">
+              Check your inbox for the password reset link.
+            </p>
+          )}
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gold text-gold-foreground hover:bg-gold/90"
+          >
+            {loading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <KeyRound className="mr-2 h-4 w-4" />
+            )}
             Sign in
           </Button>
         </form>
 
-        <Link to="/" className="mt-6 block text-center text-xs text-muted-foreground hover:underline">
+        <Link
+          to="/"
+          className="mt-6 block text-center text-xs text-muted-foreground hover:underline"
+        >
           Back to guest site
         </Link>
       </div>

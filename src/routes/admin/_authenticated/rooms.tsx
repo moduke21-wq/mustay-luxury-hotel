@@ -29,7 +29,11 @@ export const Route = createFileRoute("/admin/_authenticated/rooms")({
   head: () => ({
     meta: [
       { title: "Room & Housekeeping Manager — Mustay Luxury" },
-      { name: "description", content: "Add rooms, set prices and descriptions, manage status and photos for Mustay Luxury." },
+      {
+        name: "description",
+        content:
+          "Add rooms, set prices and descriptions, manage status and photos for Mustay Luxury.",
+      },
       { name: "robots", content: "noindex" },
       { property: "og:title", content: "Room Manager — Mustay Luxury" },
       { property: "og:description", content: "Internal room and housekeeping management." },
@@ -77,7 +81,7 @@ const EMPTY_FORM: RoomForm = {
 
 function RoomsPage() {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-overview"],
     queryFn: () => getAdminOverview(),
   });
@@ -96,6 +100,7 @@ function RoomsPage() {
   });
 
   const rooms = data?.rooms ?? [];
+  const gallery = data?.gallery ?? [];
   const current = photoRoom ? (rooms.find((r) => r.id === photoRoom.id) ?? photoRoom) : null;
 
   return (
@@ -107,18 +112,30 @@ function RoomsPage() {
             Add rooms, set the nightly price and text guests read, and manage photos.
           </p>
         </div>
-        <Button className="bg-navy text-background hover:bg-navy/90" onClick={() => setEditRoom("new")}>
+        <Button
+          className="bg-navy text-background hover:bg-navy/90"
+          onClick={() => setEditRoom("new")}
+        >
           <Plus className="mr-2 h-4 w-4" /> Add room
         </Button>
       </div>
 
       {isLoading && <p className="mt-4 text-sm text-muted-foreground">Loading rooms…</p>}
+      {isError && (
+        <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          Could not load rooms.{" "}
+          {error instanceof Error ? error.message : "Please refresh and try again."}
+        </div>
+      )}
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {rooms.map((room) => {
           const preview = room.imageUrls[0] ?? SITE_IMAGE[room.category];
           return (
-            <article key={room.id} className="overflow-hidden rounded-xl border border-border bg-card">
+            <article
+              key={room.id}
+              className="overflow-hidden rounded-xl border border-border bg-card"
+            >
               <div className="relative h-32 w-full bg-secondary">
                 {preview ? (
                   <img
@@ -148,7 +165,9 @@ function RoomsPage() {
                   {room.category} · Floor {room.floor} · {formatNLe(room.price_per_night)}
                 </p>
                 {room.description && (
-                  <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{room.description}</p>
+                  <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
+                    {room.description}
+                  </p>
                 )}
 
                 <div className="mt-3 flex flex-wrap gap-1.5">
@@ -159,7 +178,9 @@ function RoomsPage() {
                       disabled={statusMut.isPending || room.status === s}
                       onClick={() => statusMut.mutate({ roomId: room.id, status: s })}
                       className={`rounded-full border px-2.5 py-1 text-[0.65rem] transition-colors disabled:opacity-40 ${
-                        room.status === s ? "border-gold bg-gold/10 text-gold" : "border-border hover:bg-secondary"
+                        room.status === s
+                          ? "border-gold bg-gold/10 text-gold"
+                          : "border-border hover:bg-secondary"
                       }`}
                     >
                       {ROOM_STATUS_LABEL[s]}
@@ -168,10 +189,20 @@ function RoomsPage() {
                 </div>
 
                 <div className="mt-3 flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => setPhotoRoom(room)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setPhotoRoom(room)}
+                  >
                     <ImagePlus className="mr-2 h-4 w-4" /> Photos ({room.imageUrls.length})
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => setEditRoom(room)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setEditRoom(room)}
+                  >
                     <Pencil className="mr-2 h-4 w-4" /> Edit
                   </Button>
                 </div>
@@ -184,9 +215,11 @@ function RoomsPage() {
       <Dialog open={!!current} onOpenChange={(open) => !open && setPhotoRoom(null)}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl">Room {current?.room_number} photos</DialogTitle>
+            <DialogTitle className="font-display text-2xl">
+              Room {current?.room_number} photos
+            </DialogTitle>
           </DialogHeader>
-          {current && <PhotoManager room={current} onChanged={invalidate} />}
+          {current && <PhotoManager room={current} gallery={gallery} onChanged={invalidate} />}
         </DialogContent>
       </Dialog>
 
@@ -247,7 +280,8 @@ function RoomEditor({ room, onDone }: { room: AdminRoom | null; onDone: () => vo
   });
 
   const saveMut = useMutation({
-    mutationFn: () => (room ? updateRoom({ data: { id: room.id, ...payload() } }) : createRoom({ data: payload() })),
+    mutationFn: () =>
+      room ? updateRoom({ data: { id: room.id, ...payload() } }) : createRoom({ data: payload() }),
     onSuccess: (res) => {
       if (!res.ok) {
         toast.error(res.message);
@@ -339,7 +373,17 @@ function RoomEditor({ room, onDone }: { room: AdminRoom | null; onDone: () => vo
   );
 }
 
-function PhotoManager({ room, onChanged }: { room: AdminRoom; onChanged: () => void }) {
+type GalleryImage = { id: string; path: string; label: string | null; alt_text: string | null };
+
+function PhotoManager({
+  room,
+  gallery,
+  onChanged,
+}: {
+  room: AdminRoom;
+  gallery: GalleryImage[];
+  onChanged: () => void;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -385,6 +429,14 @@ function PhotoManager({ room, onChanged }: { room: AdminRoom; onChanged: () => v
   }
 
   const siteImage = SITE_IMAGE[room.category];
+  const addGalleryMut = useMutation({
+    mutationFn: (path: string) => addRoomImage({ data: { roomId: room.id, path } }),
+    onSuccess: () => {
+      toast.success("Gallery photo assigned to room");
+      onChanged();
+    },
+    onError: () => toast.error("Could not assign that gallery photo."),
+  });
 
   return (
     <div>
@@ -421,6 +473,38 @@ function PhotoManager({ room, onChanged }: { room: AdminRoom; onChanged: () => v
         />
       </div>
 
+      {gallery.length > 0 && (
+        <div className="mt-4 rounded-lg border border-border bg-secondary/20 p-3">
+          <p className="text-sm font-medium">Choose from website gallery</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Assign an existing website image to this room without uploading it again.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {gallery.map((image) => {
+              const assigned = room.images.includes(image.path);
+              return (
+                <button
+                  key={image.id}
+                  type="button"
+                  disabled={assigned || addGalleryMut.isPending}
+                  onClick={() => addGalleryMut.mutate(image.path)}
+                  className="overflow-hidden rounded-md border border-border text-left disabled:opacity-50"
+                >
+                  <img
+                    src={image.path}
+                    alt={image.alt_text || image.label || "Gallery image"}
+                    className="h-24 w-full object-cover"
+                  />
+                  <span className="block truncate px-2 py-1 text-xs">
+                    {assigned ? "Assigned" : image.label || "Gallery image"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {room.images.length === 0 && (
         <div className="mt-4">
           <p className="text-xs text-muted-foreground">
@@ -428,7 +512,11 @@ function PhotoManager({ room, onChanged }: { room: AdminRoom; onChanged: () => v
           </p>
           <div className="mt-2 overflow-hidden rounded-lg border border-border">
             {siteImage ? (
-              <img src={siteImage} alt={`${room.category} on the website`} className="h-40 w-full object-cover" />
+              <img
+                src={siteImage}
+                alt={`${room.category} on the website`}
+                className="h-40 w-full object-cover"
+              />
             ) : (
               <RoomPlaceholder label={room.category} className="h-40 w-full" />
             )}
@@ -438,7 +526,10 @@ function PhotoManager({ room, onChanged }: { room: AdminRoom; onChanged: () => v
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {room.images.map((path, i) => (
-          <div key={path} className="group relative overflow-hidden rounded-lg border border-border">
+          <div
+            key={path}
+            className="group relative overflow-hidden rounded-lg border border-border"
+          >
             <img
               src={room.imageUrls[i]}
               alt={`Room ${room.room_number} photo ${i + 1}`}

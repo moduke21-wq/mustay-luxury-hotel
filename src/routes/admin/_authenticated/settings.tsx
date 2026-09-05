@@ -20,12 +20,16 @@ import {
 import { formatNLe } from "@/lib/hotel";
 import { PaymentPreview } from "@/components/admin/payment-preview";
 import { SiteContentMap } from "@/components/admin/site-content-map";
+import { SiteMediaManager } from "@/components/admin/site-media-manager";
 
 export const Route = createFileRoute("/admin/_authenticated/settings")({
   head: () => ({
     meta: [
       { title: "Website Settings — Mustay Luxury" },
-      { name: "description", content: "Edit Mustay Luxury website text, contact numbers and room pricing." },
+      {
+        name: "description",
+        content: "Edit Mustay Luxury website text, contact numbers and room pricing.",
+      },
       { name: "robots", content: "noindex" },
       { property: "og:title", content: "Website Settings — Mustay Luxury" },
       { property: "og:description", content: "Internal website content management." },
@@ -38,8 +42,14 @@ const LONG_FIELDS: SettingKey[] = ["address", "about_text", "expansion_text"];
 
 function SettingsPage() {
   const queryClient = useQueryClient();
-  const { data: settings, isLoading } = useQuery({ queryKey: ["site-settings"], queryFn: () => getSiteSettings() });
-  const { data: overview } = useQuery({ queryKey: ["admin-overview"], queryFn: () => getAdminOverview() });
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ["site-settings"],
+    queryFn: () => getSiteSettings(),
+  });
+  const { data: overview } = useQuery({
+    queryKey: ["admin-overview"],
+    queryFn: () => getAdminOverview(),
+  });
 
   const [form, setForm] = useState<Record<string, string>>({});
   useEffect(() => {
@@ -94,18 +104,26 @@ function SettingsPage() {
           disabled={saveMut.isPending}
           className="w-full bg-gold text-gold-foreground hover:bg-gold/90"
         >
-          {saveMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+          {saveMut.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="mr-2 h-4 w-4" />
+          )}
           Save website content
         </Button>
       </section>
 
       <SiteContentMap />
 
+      <SiteMediaManager />
+
       <PaymentPreview />
 
       <section className="mt-6 rounded-xl border border-border bg-card p-4">
         <h2 className="font-display text-xl font-semibold">Room pricing</h2>
-        <p className="text-xs text-muted-foreground">Sets the nightly rate for every room in the category.</p>
+        <p className="text-xs text-muted-foreground">
+          Sets the nightly rate for every room in the category.
+        </p>
         <div className="mt-4 space-y-3">
           {categories.map(([category, price]) => (
             <PriceRow key={category} category={category} price={price} />

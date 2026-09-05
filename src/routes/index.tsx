@@ -19,7 +19,7 @@ import galleryCeiling from "@/assets/mustay/gallery-ceiling.asset.json";
 import galleryBed2 from "@/assets/mustay/gallery-bed2.asset.json";
 
 import { getPublicRooms, createGuestBooking } from "@/lib/public.functions";
-import { getSiteSettings } from "@/lib/settings.functions";
+import { getSiteMedia, getSiteSettings } from "@/lib/settings.functions";
 import { HOTEL_WHATSAPP, nightsBetween } from "@/lib/hotel";
 
 const roomsQuery = queryOptions({
@@ -32,11 +32,17 @@ const settingsQuery = queryOptions({
   queryFn: () => getSiteSettings(),
 });
 
+const mediaQuery = queryOptions({
+  queryKey: ["site-media"],
+  queryFn: () => getSiteMedia(),
+});
+
 export const Route = createFileRoute("/")({
   loader: ({ context }) =>
     Promise.all([
       context.queryClient.ensureQueryData(roomsQuery),
       context.queryClient.ensureQueryData(settingsQuery),
+      context.queryClient.ensureQueryData(mediaQuery),
     ]),
   head: () => ({
     meta: [
@@ -198,6 +204,18 @@ const WhatsAppIcon = (
 function LandingPage() {
   const { data } = useSuspenseQuery(roomsQuery);
   const { data: settings } = useSuspenseQuery(settingsQuery);
+  const { data: media } = useSuspenseQuery(mediaQuery);
+  const mediaBySlot = useMemo(
+    () =>
+      new Map(
+        (media as Array<{ slot: string; path: string; alt_text?: string }>).map((item) => [
+          item.slot,
+          item,
+        ]),
+      ),
+    [media],
+  );
+  const uploadedImage = (slot: string, fallback: string) => mediaBySlot.get(slot)?.path || fallback;
 
   const WA = (settings["whatsapp_number"] || HOTEL_WHATSAPP).replace(/\D/g, "");
   const WA_ENQUIRE = `https://wa.me/${WA}?text=${encodeURIComponent(
@@ -417,10 +435,23 @@ function LandingPage() {
   // live images from the admin photo manager override the design fallbacks
   function roomImage(room: RoomShowcase) {
     const cat = data.categories.find((c) => c.category === room.dbCategory);
-    return cat?.images?.[0] || room.fallbackImage;
+    return (
+      cat?.images?.[0] ||
+      uploadedImage(room.id === "deluxe" ? "deluxe-room" : "standard-room", room.fallbackImage)
+    );
   }
 
-  const galleryItems = GALLERY.filter((g) => galleryFilter === "all" || g.cat === galleryFilter);
+  const uploadedGalleryItems = media
+    .filter((item) => item.slot === "gallery")
+    .map((item) => ({
+      src: item.path,
+      alt: item.alt_text || "Mustay gallery image",
+      cat: "all" as const,
+      label: item.label || "Gallery",
+    }));
+  const galleryItems = (uploadedGalleryItems.length > 0 ? uploadedGalleryItems : GALLERY).filter(
+    (g) => galleryFilter === "all" || g.cat === galleryFilter,
+  );
 
   return (
     <div className="mustay-landing">
@@ -500,7 +531,7 @@ function LandingPage() {
         </div>
         <div className="hero-photo">
           <img
-            src={heroImg.url}
+            src={uploadedImage("hero", heroImg.url)}
             alt="Mustay Luxury Hotel exterior"
             style={{ position: "absolute", inset: 0 }}
           />
@@ -694,14 +725,14 @@ function LandingPage() {
           <div className="expansion-photos">
             <div className="main-shot">
               <img
-                src={expansionMain.url}
+                src={uploadedImage("construction", expansionMain.url)}
                 alt="Mustay Luxury Hotel expansion under construction"
                 style={{ position: "absolute", inset: 0 }}
               />
             </div>
             <div className="sub-shot">
               <img
-                src={expansionFront.url}
+                src={uploadedImage("footer", expansionFront.url)}
                 alt="Mustay Luxury Hotel expansion, front view"
                 style={{ position: "absolute", inset: 0 }}
               />
