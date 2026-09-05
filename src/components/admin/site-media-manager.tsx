@@ -64,7 +64,12 @@ type MediaRow = {
 
 export function SiteMediaManager() {
   const queryClient = useQueryClient();
-  const { data: media = [], isLoading } = useQuery({
+  const {
+    data: media = [],
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["site-media"],
     queryFn: async () => {
       const { data, error } = await (supabase.from("site_media" as never) as any)
@@ -98,14 +103,16 @@ export function SiteMediaManager() {
     }
     const { data: publicData } = supabase.storage.from("site-media").getPublicUrl(path);
     const existing = slot === "gallery" ? undefined : media.find((item) => item.slot === slot);
-    const { error: saveError } = await (supabase.from("site_media" as never) as any).insert({
-      ...(existing ? { id: existing.id } : {}),
+    const payload = {
       slot,
       path: publicData.publicUrl,
       label: MEDIA_SLOTS.find((item) => item.slot === slot)?.label ?? slot,
       alt_text: file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
       display_order: existing?.display_order ?? media.filter((item) => item.slot === slot).length,
-    });
+    };
+    const { error: saveError } = existing
+      ? await (supabase.from("site_media" as never) as any).update(payload).eq("id", existing.id)
+      : await (supabase.from("site_media" as never) as any).insert(payload);
     setBusy(null);
     if (saveError) {
       toast.error(saveError.message);
@@ -141,6 +148,12 @@ export function SiteMediaManager() {
         </div>
       </div>
       {isLoading ? <p className="mt-4 text-sm text-muted-foreground">Loading media…</p> : null}
+      {isError ? (
+        <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          Could not load media.{" "}
+          {error instanceof Error ? error.message : "Please refresh and try again."}
+        </div>
+      ) : null}
       {media.filter((item) => item.slot === "gallery").length > 0 ? (
         <div className="mt-4 rounded-lg border border-border bg-secondary/20 p-3">
           <p className="text-sm font-medium">Uploaded gallery images</p>

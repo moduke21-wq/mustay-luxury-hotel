@@ -81,7 +81,7 @@ const EMPTY_FORM: RoomForm = {
 
 function RoomsPage() {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["admin-overview"],
     queryFn: () => getAdminOverview(),
   });
@@ -121,6 +121,12 @@ function RoomsPage() {
       </div>
 
       {isLoading && <p className="mt-4 text-sm text-muted-foreground">Loading rooms…</p>}
+      {isError && (
+        <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          Could not load rooms.{" "}
+          {error instanceof Error ? error.message : "Please refresh and try again."}
+        </div>
+      )}
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {rooms.map((room) => {
