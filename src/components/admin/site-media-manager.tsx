@@ -39,6 +39,11 @@ const MEDIA_SLOTS = [
     label: "Footer / contact background",
     help: "Background image for the public contact and footer area.",
   },
+  {
+    slot: ADMIN_BACKGROUND_SLOT,
+    label: "Admin dashboard background",
+    help: "A private visual backdrop for the Mustay operations dashboard.",
+  },
 ] as const;
 
 type MediaRow = {
@@ -49,6 +54,8 @@ type MediaRow = {
   alt_text: string;
   display_order: number;
 };
+
+const ADMIN_BACKGROUND_SLOT = "admin-background";
 
 export function SiteMediaManager() {
   const queryClient = useQueryClient();
@@ -85,14 +92,14 @@ export function SiteMediaManager() {
       return;
     }
     const { data: publicData } = supabase.storage.from("site-media").getPublicUrl(path);
-    const existing = media.find((item) => item.slot === slot);
-    const { error: saveError } = await (supabase.from("site_media" as never) as any).upsert({
+    const existing = slot === "gallery" ? undefined : media.find((item) => item.slot === slot);
+    const { error: saveError } = await (supabase.from("site_media" as never) as any).insert({
       ...(existing ? { id: existing.id } : {}),
       slot,
       path: publicData.publicUrl,
       label: MEDIA_SLOTS.find((item) => item.slot === slot)?.label ?? slot,
       alt_text: file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
-      display_order: existing?.display_order ?? media.length,
+      display_order: existing?.display_order ?? media.filter((item) => item.slot === slot).length,
     });
     setBusy(null);
     if (saveError) {
@@ -129,6 +136,38 @@ export function SiteMediaManager() {
         </div>
       </div>
       {isLoading ? <p className="mt-4 text-sm text-muted-foreground">Loading media…</p> : null}
+      {media.filter((item) => item.slot === "gallery").length > 0 ? (
+        <div className="mt-4 rounded-lg border border-border bg-secondary/20 p-3">
+          <p className="text-sm font-medium">Uploaded gallery images</p>
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {media
+              .filter((item) => item.slot === "gallery")
+              .map((item) => (
+                <div
+                  key={item.id}
+                  className="group relative aspect-[4/3] overflow-hidden rounded-md border border-border"
+                >
+                  <img
+                    src={item.path}
+                    alt={item.alt_text || "Gallery image"}
+                    className="h-full w-full object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute right-1 top-1 size-7 opacity-0 transition-opacity group-hover:opacity-100"
+                    onClick={() => void remove(item)}
+                    disabled={busy === item.id}
+                    aria-label={`Remove ${item.alt_text || "gallery image"}`}
+                  >
+                    <Trash2 data-icon="inline-start" />
+                  </Button>
+                </div>
+              ))}
+          </div>
+        </div>
+      ) : null}
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         {MEDIA_SLOTS.map((definition) => {
           const item = media.find((entry) => entry.slot === definition.slot);

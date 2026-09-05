@@ -1,5 +1,6 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { BedDouble, LayoutDashboard, LogOut, Search, Settings, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -36,8 +37,39 @@ function AdminLayout() {
     navigate({ to: "/admin/login", replace: true });
   }
 
+  const [adminBackground, setAdminBackground] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void supabase
+      .from("site_media" as never)
+      .select("path")
+      .eq("slot", "admin-background")
+      .maybeSingle()
+      .then(({ data }) => {
+        if (active && data && typeof data === "object" && "path" in data) {
+          setAdminBackground(String(data.path));
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-secondary/40 pb-20 md:flex md:pb-0">
+    <div
+      className="min-h-screen bg-secondary/40 pb-20 md:flex md:pb-0"
+      style={
+        adminBackground
+          ? {
+              backgroundImage: `linear-gradient(oklch(0.13 0.04 265 / 0.88), oklch(0.13 0.04 265 / 0.88)), url(${adminBackground})`,
+              backgroundAttachment: "fixed",
+              backgroundPosition: "center",
+              backgroundSize: "cover",
+            }
+          : undefined
+      }
+    >
       <aside className="hidden w-60 shrink-0 flex-col justify-between bg-navy p-5 text-background md:flex md:min-h-screen">
         <div>
           <p className="font-display text-xl font-semibold">Mustay Luxury</p>
@@ -66,7 +98,12 @@ function AdminLayout() {
 
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-navy px-4 py-3 text-background md:hidden">
         <p className="font-display text-lg">Mustay Ops</p>
-        <Button size="sm" variant="ghost" onClick={signOut} className="text-background hover:bg-background/10">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={signOut}
+          className="text-background hover:bg-background/10"
+        >
           <LogOut className="mr-1.5 h-4 w-4" /> Log out
         </Button>
       </header>
