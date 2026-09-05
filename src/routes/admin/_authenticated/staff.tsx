@@ -51,7 +51,7 @@ function StaffPage() {
     mutationFn: () => inviteOwner({ data: undefined }),
     onSuccess: (res) => {
       if (res.ok) {
-        toast.success(`${res.message} Setup password: ${res.setupPassword}`, { duration: 15000 });
+        toast.success(res.message, { duration: 10000 });
         invalidate();
       } else toast.error(res.message);
     },
@@ -86,7 +86,7 @@ function StaffPage() {
           <div>
             <h2 className="font-display text-xl font-semibold">Super Admin / Owner</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Send a secure password setup invitation to mustaybookkeepingservices@gmail.com.
+              Create the Better Auth Super Admin account for mustaybookkeepingservices@gmail.com using the secure setup password configured for this environment.
             </p>
           </div>
           <Button

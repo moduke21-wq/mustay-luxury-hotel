@@ -70,7 +70,14 @@ export const inviteOwner = createServerFn({ method: "POST" }).handler(async () =
     };
   }
 
-  const bootstrapPassword = `${crypto.randomUUID()}-${crypto.randomUUID()}`;
+  const bootstrapPassword = process.env.OWNER_INITIAL_PASSWORD;
+  if (!bootstrapPassword) {
+    return {
+      ok: false as const,
+      message: "Owner setup is unavailable until OWNER_INITIAL_PASSWORD is configured.",
+    };
+  }
+
   const created = await auth.api.createUser({
     body: {
       email: OWNER_EMAIL,
@@ -81,9 +88,7 @@ export const inviteOwner = createServerFn({ method: "POST" }).handler(async () =
   });
   return {
     ok: true as const,
-    message:
-      "Super Admin created. Use the generated setup password shown once below, then change it immediately.",
-    setupPassword: bootstrapPassword,
+    message: "Super Admin created. Sign in and change the temporary setup password immediately.",
     userId: created.user.id,
   };
 });
