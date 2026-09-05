@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertAdmin } from "@/lib/admin-auth";
 import type { Database } from "@/integrations/supabase/types";
 
 export const SETTING_KEYS = [
@@ -67,6 +68,7 @@ export const saveSiteSettings = createServerFn({ method: "POST" })
     z.object({ settings: z.record(z.string(), z.string().max(2000)) }).parse(d),
   )
   .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
     const rows = Object.entries(data.settings)
       .filter(([key]) => (SETTING_KEYS as readonly string[]).includes(key))
       .map(([key, value]) => ({ key, value, updated_at: new Date().toISOString() }));
@@ -85,6 +87,7 @@ export const setCategoryPrice = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
     const { error } = await context.supabase
       .from("rooms")
       .update({ price_per_night: data.price })
