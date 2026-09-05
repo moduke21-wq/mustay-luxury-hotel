@@ -20,9 +20,9 @@ export const Route = createFileRoute("/admin/_authenticated")({
 const NAV = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/rooms", label: "Rooms", icon: BedDouble },
-  { to: "/admin/reception", label: "Reception", icon: Search },
-  { to: "/admin/settings", label: "Website", icon: Settings },
-  { to: "/admin/staff", label: "Team", icon: Users },
+  { to: "/admin/reception", label: "Bookings", icon: Search },
+  { to: "/admin/settings", label: "Website media", icon: Settings },
+  { to: "/admin/staff", label: "Staff", icon: Users },
 ] as const;
 
 function AdminLayout() {
@@ -69,10 +69,12 @@ function AdminLayout() {
           : undefined
       }
     >
-      <aside className="hidden w-60 shrink-0 flex-col justify-between bg-navy p-5 text-background md:flex md:min-h-screen">
+      <aside className="hidden w-64 shrink-0 flex-col justify-between bg-navy p-6 text-background md:flex md:min-h-screen">
         <div>
-          <p className="font-display text-xl font-semibold">Mustay Luxury</p>
-          <p className="text-[0.6rem] uppercase tracking-[0.3em] text-gold">Operations</p>
+          <div className="border-b border-background/10 pb-6">
+            <p className="font-display text-2xl font-semibold tracking-wide">MUSTAY</p>
+            <p className="mt-1 text-[0.6rem] uppercase tracking-[0.32em] text-gold">Luxury Hotel</p>
+          </div>
           <nav className="mt-8 space-y-1">
             {NAV.map(({ to, label, icon: Icon }) => (
               <Link
@@ -108,6 +110,13 @@ function AdminLayout() {
       </header>
 
       <main className="flex-1 overflow-x-hidden">
+        <div className="hidden items-center justify-between border-b border-border/70 bg-background/90 px-8 py-4 backdrop-blur md:flex">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            Live operations
+          </div>
+          <p className="text-sm text-muted-foreground">Mustay Luxury Hotel · Admin</p>
+        </div>
         <Outlet />
       </main>
 
