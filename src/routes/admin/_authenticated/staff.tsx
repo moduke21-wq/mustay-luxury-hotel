@@ -55,13 +55,24 @@ function StaffPage() {
       if (!session || nearExpiry) {
         sessionResult = await supabase.auth.refreshSession();
       }
-      const accessToken = sessionResult.data.session?.access_token;
+      let accessToken = sessionResult.data.session?.access_token;
       if (!accessToken) {
+        const userResult = await supabase.auth.getUser();
+        if (userResult.error || !userResult.data.user) {
+          throw new Error(
+            "Your admin session expired. Please sign in again, then try adding the staff member.",
+          );
+        }
+        const retry = await supabase.auth.getSession();
+        accessToken = retry.data.session?.access_token;
+      }
+      if (typeof accessToken !== "string" || accessToken.length < 20) {
         throw new Error(
           "Your admin session expired. Please sign in again, then try adding the staff member.",
         );
       }
-      return createStaff({ data: { accessToken, email, fullName, password, role } });
+      const staffRequest = { accessToken, email, fullName, password, role };
+      return createStaff({ data: staffRequest });
     },
     onSuccess: (res) => {
       if (res.ok) {
