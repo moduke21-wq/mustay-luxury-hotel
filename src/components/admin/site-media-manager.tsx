@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { getSiteMedia } from "@/lib/settings.functions";
 
 const ADMIN_BACKGROUND_SLOT = "admin-background";
 
@@ -71,13 +72,7 @@ export function SiteMediaManager() {
     error,
   } = useQuery({
     queryKey: ["site-media"],
-    queryFn: async () => {
-      const { data, error } = await (supabase.from("site_media" as never) as any)
-        .select("id,slot,path,label,alt_text,display_order")
-        .order("display_order", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as MediaRow[];
-    },
+    queryFn: async () => (await getSiteMedia()) as MediaRow[],
   });
   const [busy, setBusy] = useState<string | null>(null);
 
