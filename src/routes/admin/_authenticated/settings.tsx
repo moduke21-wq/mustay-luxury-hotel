@@ -12,6 +12,7 @@ import { getAdminOverview } from "@/lib/admin.functions";
 import {
   SETTING_KEYS,
   SETTING_LABELS,
+  changeAdminPassword,
   getSiteSettings,
   saveSiteSettings,
   setCategoryPrice,
@@ -52,6 +53,8 @@ function SettingsPage() {
   });
 
   const [form, setForm] = useState<Record<string, string>>({});
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   useEffect(() => {
     if (settings) setForm(settings);
   }, [settings]);
@@ -64,6 +67,17 @@ function SettingsPage() {
         queryClient.invalidateQueries({ queryKey: ["site-settings"] });
       } else toast.error(res.message ?? "Could not save");
     },
+  });
+
+  const passwordMut = useMutation({
+    mutationFn: () => changeAdminPassword({ data: { password: newPassword } }),
+    onSuccess: (res) => {
+      if (!res.ok) return toast.error(res.message ?? "Could not change password");
+      toast.success("Admin password changed");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const categories = Array.from(
@@ -96,6 +110,50 @@ function SettingsPage() {
       </section>
 
       {isLoading && <p className="mt-4 text-sm text-muted-foreground">Loading…</p>}
+
+      <section className="mt-6 space-y-4 rounded-xl border border-gold/30 bg-gold/5 p-4">
+        <div>
+          <h2 className="font-display text-xl font-semibold">Admin password</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Only the administrator can change this password. Use at least 8 characters.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="new-admin-password">New password</Label>
+            <Input
+              id="new-admin-password"
+              type="password"
+              autoComplete="new-password"
+              minLength={8}
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="confirm-admin-password">Confirm new password</Label>
+            <Input
+              id="confirm-admin-password"
+              type="password"
+              autoComplete="new-password"
+              minLength={8}
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+            />
+          </div>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={
+            passwordMut.isPending || newPassword.length < 8 || newPassword !== confirmPassword
+          }
+          onClick={() => passwordMut.mutate()}
+        >
+          {passwordMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          Change admin password
+        </Button>
+      </section>
 
       <section className="mt-6 space-y-4 rounded-xl border border-border bg-card p-4">
         <div className="rounded-md border border-gold/30 bg-gold/10 p-3 text-sm text-muted-foreground">

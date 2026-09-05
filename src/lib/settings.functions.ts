@@ -79,6 +79,15 @@ export const saveSiteSettings = createServerFn({ method: "POST" })
     return error ? { ok: false as const, message: error.message } : { ok: true as const };
   });
 
+export const changeAdminPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ password: z.string().min(8).max(128) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { error } = await context.supabase.auth.updateUser({ password: data.password });
+    return error ? { ok: false as const, message: error.message } : { ok: true as const };
+  });
+
 export const setCategoryPrice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
