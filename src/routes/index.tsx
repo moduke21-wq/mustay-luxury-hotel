@@ -176,6 +176,20 @@ const WhatsAppIcon = (
 
 function LandingPage() {
   const { data } = useSuspenseQuery(roomsQuery);
+  const { data: settings } = useSuspenseQuery(settingsQuery);
+
+  const WA = (settings["whatsapp_number"] || HOTEL_WHATSAPP).replace(/\D/g, "");
+  const WA_ENQUIRE = `https://wa.me/${WA}?text=${encodeURIComponent(
+    "Hello Mustay Luxury Hotel, I'd like to enquire about a stay.",
+  )}`;
+  const phone1 = settings["phone_primary"] || "+232 79 494-545";
+  const phone2 = settings["phone_secondary"] || "+232 72 080-818";
+  const tel = (v: string) => `tel:${v.replace(/[^\d+]/g, "")}`;
+  const address = settings["address"] || "Abu Street, Shelmingo, Manjama Section, Bo City, Sierra Leone";
+  const heroTitle = settings["hero_title"] || "Welcome to Mustay Luxury Hotel";
+  const heroSubtitle = settings["hero_subtitle"] || "Luxury, comfort & quality time in Bo City";
+  const aboutText = settings["about_text"] || "";
+  const expansionText = settings["expansion_text"] || "";
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
@@ -399,8 +413,8 @@ function LandingPage() {
       <section className="hero" id="home">
         <div className="hero-copy">
           <div className="hero-eyebrow">Bo City, Sierra Leone</div>
-          <h1>Welcome to Mustay Luxury Hotel</h1>
-          <div className="hero-sub">Luxury, comfort &amp; quality time in Bo City</div>
+          <h1>{heroTitle}</h1>
+          <div className="hero-sub">{heroSubtitle}</div>
           <p className="hero-desc">
             A peaceful and comfortable place to relax, enjoy quality time with your loved ones, and
             experience warm hospitality in the heart of Bo City.
@@ -418,7 +432,7 @@ function LandingPage() {
               <path d="M12 21s-7-6.2-7-11.2A7 7 0 0 1 19 9.8C19 14.8 12 21 12 21z" />
               <circle cx="12" cy="9.5" r="2.3" />
             </svg>
-            Abu Street, Shelmingo, Manjama Section, Bo City, Sierra Leone
+            {address}
           </div>
         </div>
         <div className="hero-photo">
@@ -479,10 +493,8 @@ function LandingPage() {
           <h2>A comfortable stay. A memorable experience.</h2>
           <div className="welcome-right">
             <p>
-              Mustay Luxury Hotel is located at Abu Street in the Shelmingo area of Manjama Section, Bo
-              City, Sierra Leone. Whether you're visiting Bo for business, spending time with family,
-              enjoying a getaway with your loved ones, or simply looking for a quiet place to relax,
-              Mustay Luxury Hotel provides comfortable accommodation and warm hospitality.
+              {aboutText ||
+                "Mustay Luxury Hotel is located at Abu Street in the Shelmingo area of Manjama Section, Bo City, Sierra Leone. Whether you're visiting Bo for business, spending time with family, enjoying a getaway with your loved ones, or simply looking for a quiet place to relax, Mustay Luxury Hotel provides comfortable accommodation and warm hospitality."}
             </p>
             <a href="#rooms" className="btn-outline">
               Discover Mustay
@@ -597,9 +609,8 @@ function LandingPage() {
             <div className="status-tag">Under Construction</div>
             <h2>A New Chapter for Mustay</h2>
             <p>
-              Work is underway on our next building in Bo City — a larger property designed to bring
-              even more comfort to every stay, complete with a Club &amp; Restaurant and an elevator
-              for easy access to every floor.
+              {expansionText ||
+                "Work is underway on our next building in Bo City — a larger property designed to bring even more comfort to every stay, complete with a Club & Restaurant and an elevator for easy access to every floor."}
             </p>
             <div className="expansion-features">
               <div>
@@ -680,18 +691,18 @@ function LandingPage() {
               help.
             </p>
             <div className="contact-cards">
-              <a href="tel:+23279494545" className="contact-card">
+              <a href={tel(phone1)} className="contact-card">
                 <span className="cc-icon">{PhoneIcon}</span>
                 <span className="cc-text">
                   <span className="cc-label">Call Us</span>
-                  <span className="cc-value">+232 79 494-545</span>
+                  <span className="cc-value">{phone1}</span>
                 </span>
               </a>
-              <a href="tel:+23272080818" className="contact-card">
+              <a href={tel(phone2)} className="contact-card">
                 <span className="cc-icon">{PhoneIcon}</span>
                 <span className="cc-text">
                   <span className="cc-label">Call Us</span>
-                  <span className="cc-value">+232 72 080-818</span>
+                  <span className="cc-value">{phone2}</span>
                 </span>
               </a>
               <a href={WA_ENQUIRE} target="_blank" rel="noopener" className="contact-card cc-whatsapp">
@@ -707,7 +718,7 @@ function LandingPage() {
                 <path d="M12 21s-7-6.2-7-11.2A7 7 0 0 1 19 9.8C19 14.8 12 21 12 21z" />
                 <circle cx="12" cy="9.5" r="2.3" />
               </svg>
-              Abu Street, Shelmingo, Manjama Section, Bo City, Sierra Leone
+              {address}
             </div>
           </div>
 
@@ -907,14 +918,12 @@ function LandingPage() {
             <div className="footer-brand">
               <h3>Mustay Luxury Hotel</h3>
               <p>
-                Abu Street, Shelmingo, Manjama Section,
-                <br />
-                Bo City, Sierra Leone
+                {address}
                 <br />
                 <br />
-                <a href="tel:+23279494545">+232 79 494-545</a>
+                <a href={tel(phone1)}>{phone1}</a>
                 <br />
-                <a href="tel:+23272080818">+232 72 080-818</a>
+                <a href={tel(phone2)}>{phone2}</a>
               </p>
             </div>
             <div className="footer-col">
