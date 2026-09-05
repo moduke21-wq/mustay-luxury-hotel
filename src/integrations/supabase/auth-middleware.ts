@@ -81,7 +81,8 @@ export const requireSupabaseAuth = createMiddleware({ type: "function" }).server
       },
     });
 
-    const { data, error } = await supabase.auth.getUser(token);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin.auth.getUser(token);
     if (error || !data?.user) {
       throw new Error("Unauthorized: Invalid or expired session. Please sign in again.");
     }

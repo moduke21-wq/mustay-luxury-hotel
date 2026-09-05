@@ -49,13 +49,19 @@ function StaffPage() {
 
   const createMut = useMutation({
     mutationFn: async () => {
-      const refreshed = await supabase.auth.refreshSession();
-      if (refreshed.error || !refreshed.data.session) {
+      let sessionResult = await supabase.auth.getSession();
+      const session = sessionResult.data.session;
+      const nearExpiry = (session?.expires_at ?? 0) <= Math.floor(Date.now() / 1000) + 60;
+      if (!session || nearExpiry) {
+        sessionResult = await supabase.auth.refreshSession();
+      }
+      const accessToken = sessionResult.data.session?.access_token;
+      if (!accessToken) {
         throw new Error(
           "Your admin session expired. Please sign in again, then try adding the staff member.",
         );
       }
-      return createStaff({ data: { email, fullName, password, role } });
+      return createStaff({ data: { accessToken, email, fullName, password, role } });
     },
     onSuccess: (res) => {
       if (res.ok) {
