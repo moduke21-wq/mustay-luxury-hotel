@@ -37,7 +37,8 @@ function publicClient() {
     global: {
       fetch: (input, init) => {
         const h = new Headers(init?.headers);
-        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
+        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`)
+          h.delete("Authorization");
         h.set("apikey", key);
         return fetch(input, { ...init, headers: h });
       },
@@ -52,6 +53,14 @@ export const getSiteSettings = createServerFn({ method: "GET" }).handler(async (
   return settings;
 });
 
+export const getSiteMedia = createServerFn({ method: "GET" }).handler(async () => {
+  const { data, error } = await (publicClient().from("site_media" as never) as any)
+    .select("id,slot,room_id,path,label,alt_text,display_order")
+    .order("display_order", { ascending: true });
+  if (error) return [];
+  return data ?? [];
+});
+
 export const saveSiteSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -62,14 +71,18 @@ export const saveSiteSettings = createServerFn({ method: "POST" })
       .filter(([key]) => (SETTING_KEYS as readonly string[]).includes(key))
       .map(([key, value]) => ({ key, value, updated_at: new Date().toISOString() }));
     if (rows.length === 0) return { ok: true as const };
-    const { error } = await context.supabase.from("site_settings").upsert(rows, { onConflict: "key" });
+    const { error } = await context.supabase
+      .from("site_settings")
+      .upsert(rows, { onConflict: "key" });
     return error ? { ok: false as const, message: error.message } : { ok: true as const };
   });
 
 export const setCategoryPrice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ category: z.string().min(2).max(60), price: z.coerce.number().min(0).max(1000000) }).parse(d),
+    z
+      .object({ category: z.string().min(2).max(60), price: z.coerce.number().min(0).max(1000000) })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
