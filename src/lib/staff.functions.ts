@@ -46,10 +46,10 @@ export const listStaff = createServerFn({ method: "GET" })
   });
 
 export const createStaff = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z
       .object({
-        accessToken: z.string().min(20),
         email: z.string().trim().email().max(255),
         password: z.string().min(8).max(72),
         fullName: z.string().trim().max(120).optional().or(z.literal("")),
@@ -57,18 +57,16 @@ export const createStaff = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: authenticated, error: sessionError } = await supabaseAdmin.auth.getUser(
-      data.accessToken,
-    );
-    if (sessionError || !authenticated.user) {
+    try {
+      await assertAdmin(supabaseAdmin, context.userId);
+    } catch {
       return {
         ok: false as const,
-        message: "Your admin session is invalid or expired. Please sign in again.",
+        message: "Administrator access is required to create staff accounts.",
       };
     }
-    await assertAdmin(supabaseAdmin, authenticated.user.id);
     const email = data.email.toLowerCase();
 
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({

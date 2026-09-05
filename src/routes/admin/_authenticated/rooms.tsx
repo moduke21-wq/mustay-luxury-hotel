@@ -101,6 +101,8 @@ function RoomsPage() {
 
   const rooms = data?.rooms ?? [];
   const gallery = data?.gallery ?? [];
+  const standardRoom = rooms.find((room) => room.category.toLowerCase().includes("standard"));
+  const deluxeRoom = rooms.find((room) => room.category.toLowerCase().includes("deluxe"));
   const current = photoRoom ? (rooms.find((r) => r.id === photoRoom.id) ?? photoRoom) : null;
 
   return (
@@ -135,21 +137,18 @@ function RoomsPage() {
           guest-facing details here.
         </p>
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
-          {["Standard Room", "Deluxe Suite"].map((category) => {
-            const room = rooms.find(
-              (item) => item.category.toLowerCase() === category.toLowerCase(),
-            );
-            return room ? (
-              <RoomTypeSettings key={room.id} room={room} onSaved={invalidate} />
-            ) : (
-              <p
-                key={category}
-                className="rounded-md border border-border p-4 text-sm text-muted-foreground"
-              >
-                No {category} room found.
-              </p>
-            );
-          })}
+          <RoomTypeSettings
+            room={standardRoom}
+            category="Standard Room"
+            defaultPrice={700}
+            onSaved={invalidate}
+          />
+          <RoomTypeSettings
+            room={deluxeRoom}
+            category="Deluxe Suite"
+            defaultPrice={800}
+            onSaved={invalidate}
+          />
         </div>
       </section>
 
@@ -281,13 +280,24 @@ function RoomsPage() {
   );
 }
 
-function RoomTypeSettings({ room, onSaved }: { room: AdminRoom; onSaved: () => void }) {
-  const [price, setPrice] = useState(String(room.price_per_night));
-  const [description, setDescription] = useState(room.description ?? "");
-  const [amenities, setAmenities] = useState((room.amenities ?? []).join(", "));
+function RoomTypeSettings({
+  room,
+  category,
+  defaultPrice,
+  onSaved,
+}: {
+  room?: AdminRoom;
+  category: string;
+  defaultPrice: number;
+  onSaved: () => void;
+}) {
+  const [price, setPrice] = useState(String(room?.price_per_night ?? defaultPrice));
+  const [description, setDescription] = useState(room?.description ?? "");
+  const [amenities, setAmenities] = useState((room?.amenities ?? []).join(", "));
   const mutation = useMutation({
-    mutationFn: () =>
-      updateRoom({
+    mutationFn: () => {
+      if (!room) throw new Error(`No ${category} room is available to update.`);
+      return updateRoom({
         data: {
           id: room.id,
           room_number: room.room_number,
@@ -302,7 +312,8 @@ function RoomTypeSettings({ room, onSaved }: { room: AdminRoom; onSaved: () => v
             .map((item) => item.trim())
             .filter(Boolean),
         },
-      }),
+      });
+    },
     onSuccess: (result) => {
       if (!result.ok) return toast.error(result.message);
       toast.success(`${room.category} settings saved`);
@@ -315,10 +326,12 @@ function RoomTypeSettings({ room, onSaved }: { room: AdminRoom; onSaved: () => v
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="font-display text-xl font-semibold">{room.category}</p>
-          <p className="text-xs text-muted-foreground">Room {room.room_number}</p>
+          <p className="text-xs text-muted-foreground">
+            {room ? `Room ${room.room_number}` : `No ${category} room loaded`}
+          </p>
         </div>
         <span className="rounded-full bg-gold/15 px-3 py-1 text-sm font-semibold">
-          {formatNLe(room.price_per_night)}
+          {formatNLe(Number(price))}
         </span>
       </div>
       <div className="mt-3 grid gap-3">
@@ -351,7 +364,7 @@ function RoomTypeSettings({ room, onSaved }: { room: AdminRoom; onSaved: () => v
         <Button
           type="button"
           className="bg-navy text-background hover:bg-navy/90"
-          disabled={mutation.isPending}
+          disabled={mutation.isPending || !room}
           onClick={() => mutation.mutate()}
         >
           {mutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Save{" "}
