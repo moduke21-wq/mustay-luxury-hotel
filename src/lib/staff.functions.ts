@@ -12,6 +12,8 @@ export type StaffMember = {
   roles: string[];
   createdAt: string;
   isOwner: boolean;
+  bannedUntil: string | null;
+  lastSignInAt: string | null;
 };
 
 export const listStaff = createServerFn({ method: "GET" })
@@ -20,9 +22,10 @@ export const listStaff = createServerFn({ method: "GET" })
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [{ data: profiles }, { data: roles }] = await Promise.all([
+    const [{ data: profiles }, { data: roles }, { data: authUsers }] = await Promise.all([
       supabaseAdmin.from("profiles").select("id, email, full_name, created_at").order("created_at"),
       supabaseAdmin.from("user_roles").select("user_id, role"),
+      supabaseAdmin.auth.admin.listUsers({ perPage: 1000 }),
     ]);
 
     const roleMap = new Map<string, string[]>();
@@ -37,6 +40,8 @@ export const listStaff = createServerFn({ method: "GET" })
       roles: roleMap.get(p.id) ?? [],
       createdAt: p.created_at,
       isOwner: p.email.toLowerCase() === OWNER_EMAIL,
+      bannedUntil: authUsers?.users.find((u) => u.id === p.id)?.banned_until ?? null,
+      lastSignInAt: authUsers?.users.find((u) => u.id === p.id)?.last_sign_in_at ?? null,
     })) as StaffMember[];
   });
 
@@ -63,11 +68,15 @@ export const createStaff = createServerFn({ method: "POST" })
       email_confirm: true,
       user_metadata: { full_name: data.fullName || email },
     });
-    if (error || !created.user) return { ok: false as const, message: error?.message ?? "Could not create account." };
+    if (error || !created.user)
+      return { ok: false as const, message: error?.message ?? "Could not create account." };
 
     await supabaseAdmin
       .from("profiles")
-      .upsert({ id: created.user.id, email, full_name: data.fullName || email }, { onConflict: "id" });
+      .upsert(
+        { id: created.user.id, email, full_name: data.fullName || email },
+        { onConflict: "id" },
+      );
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
       .insert({ user_id: created.user.id, role: data.role });
@@ -79,13 +88,17 @@ export const createStaff = createServerFn({ method: "POST" })
 export const setStaffRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
-    z.object({ userId: z.string().uuid(), role: z.enum(["admin", "manager", "receptionist"]) }).parse(d),
+    z
+      .object({ userId: z.string().uuid(), role: z.enum(["admin", "manager", "receptionist"]) })
+      .parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
-    const { error } = await supabaseAdmin.from("user_roles").insert({ user_id: data.userId, role: data.role });
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: data.userId, role: data.role });
     return error ? { ok: false as const, message: error.message } : { ok: true as const };
   });
 
@@ -97,7 +110,32 @@ export const setStaffPassword = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, { password: data.password });
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      password: data.password,
+    });
+    return error ? { ok: false as const, message: error.message } : { ok: true as const };
+  });
+
+export const setStaffBan = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ userId: z.string().uuid(), banned: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    if (data.userId === context.userId)
+      return { ok: false as const, message: "You cannot ban your own account." };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("email")
+      .eq("id", data.userId)
+      .maybeSingle();
+    if (profile?.email?.toLowerCase() === OWNER_EMAIL)
+      return { ok: false as const, message: "The owner account cannot be banned." };
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+      ban_duration: data.banned ? "876000h" : "none",
+    });
     return error ? { ok: false as const, message: error.message } : { ok: true as const };
   });
 
@@ -106,7 +144,8 @@ export const removeStaff = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ userId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    if (data.userId === context.userId) return { ok: false as const, message: "You cannot remove your own account." };
+    if (data.userId === context.userId)
+      return { ok: false as const, message: "You cannot remove your own account." };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: profile } = await supabaseAdmin
       .from("profiles")

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Loader2, ShieldCheck, Trash2, UserPlus } from "lucide-react";
+import { Ban, CheckCircle2, Loader2, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import {
   createStaff,
   listStaff,
   removeStaff,
+  setStaffBan,
   setStaffPassword,
   setStaffRole,
   type StaffMember,
@@ -20,7 +21,10 @@ export const Route = createFileRoute("/admin/_authenticated/staff")({
   head: () => ({
     meta: [
       { title: "Team & Admins — Mustay Luxury" },
-      { name: "description", content: "Create and manage Mustay Luxury administrator and reception accounts." },
+      {
+        name: "description",
+        content: "Create and manage Mustay Luxury administrator and reception accounts.",
+      },
       { name: "robots", content: "noindex" },
       { property: "og:title", content: "Team & Admins — Mustay Luxury" },
       { property: "og:description", content: "Internal staff account management." },
@@ -76,11 +80,20 @@ function StaffPage() {
           </div>
           <div>
             <Label htmlFor="staff-email">Email</Label>
-            <Input id="staff-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input
+              id="staff-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div>
             <Label htmlFor="staff-password">Temporary password (min 8 characters)</Label>
-            <Input id="staff-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input
+              id="staff-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
           <div>
             <Label htmlFor="staff-role">Role</Label>
@@ -92,7 +105,11 @@ function StaffPage() {
             >
               {ROLES.map((r) => (
                 <option key={r} value={r}>
-                  {r === "admin" ? "Admin (full control)" : r === "manager" ? "Manager" : "Receptionist"}
+                  {r === "admin"
+                    ? "Admin (full control)"
+                    : r === "manager"
+                      ? "Manager"
+                      : "Receptionist"}
                 </option>
               ))}
             </select>
@@ -142,6 +159,17 @@ function StaffCard({ member, onChanged }: { member: StaffMember; onChanged: () =
     },
   });
 
+  const banMut = useMutation({
+    mutationFn: (banned: boolean) => setStaffBan({ data: { userId: member.id, banned } }),
+    onSuccess: (res) => {
+      if (res.ok) {
+        toast.success(member.bannedUntil ? "Account unbanned" : "Account banned");
+        onChanged();
+      } else toast.error(res.message ?? "Could not update account access");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const removeMut = useMutation({
     mutationFn: () => removeStaff({ data: { userId: member.id } }),
     onSuccess: (res) => {
@@ -158,6 +186,12 @@ function StaffCard({ member, onChanged }: { member: StaffMember; onChanged: () =
         <div className="min-w-0">
           <p className="truncate font-medium">{member.fullName || member.email}</p>
           <p className="truncate text-xs text-muted-foreground">{member.email}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {member.bannedUntil ? "Banned from signing in" : "Active"} ·{" "}
+            {member.lastSignInAt
+              ? `Last sign-in ${new Date(member.lastSignInAt).toLocaleDateString()}`
+              : "Never signed in"}
+          </p>
         </div>
         {member.isOwner && (
           <span className="flex shrink-0 items-center gap-1 rounded-full bg-gold/15 px-2.5 py-1 text-[0.65rem] uppercase tracking-wider text-gold">
@@ -196,15 +230,30 @@ function StaffCard({ member, onChanged }: { member: StaffMember; onChanged: () =
       </div>
 
       {!member.isOwner && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="mt-2 text-red-600 hover:bg-red-500/10 hover:text-red-600"
-          onClick={() => removeMut.mutate()}
-          disabled={removeMut.isPending}
-        >
-          <Trash2 className="mr-1.5 h-4 w-4" /> Remove account
-        </Button>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => banMut.mutate(!member.bannedUntil)}
+            disabled={banMut.isPending}
+          >
+            {member.bannedUntil ? (
+              <CheckCircle2 className="mr-1.5 h-4 w-4" />
+            ) : (
+              <Ban className="mr-1.5 h-4 w-4" />
+            )}
+            {member.bannedUntil ? "Unban account" : "Ban account"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-2 text-red-600 hover:bg-red-500/10 hover:text-red-600"
+            onClick={() => removeMut.mutate()}
+            disabled={removeMut.isPending}
+          >
+            <Trash2 className="mr-1.5 h-4 w-4" /> Remove account
+          </Button>
+        </div>
       )}
     </article>
   );
