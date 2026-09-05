@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Ban, CheckCircle2, Loader2, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,32 +47,7 @@ function StaffPage() {
   const [role, setRole] = useState<Role>("admin");
 
   const createMut = useMutation({
-    mutationFn: async () => {
-      let sessionResult = await supabase.auth.getSession();
-      const session = sessionResult.data.session;
-      const nearExpiry = (session?.expires_at ?? 0) <= Math.floor(Date.now() / 1000) + 60;
-      if (!session || nearExpiry) {
-        sessionResult = await supabase.auth.refreshSession();
-      }
-      let accessToken = sessionResult.data.session?.access_token;
-      if (!accessToken) {
-        const userResult = await supabase.auth.getUser();
-        if (userResult.error || !userResult.data.user) {
-          throw new Error(
-            "Your admin session expired. Please sign in again, then try adding the staff member.",
-          );
-        }
-        const retry = await supabase.auth.getSession();
-        accessToken = retry.data.session?.access_token;
-      }
-      if (typeof accessToken !== "string" || accessToken.length < 20) {
-        throw new Error(
-          "Your admin session expired. Please sign in again, then try adding the staff member.",
-        );
-      }
-      const staffRequest = { accessToken, email, fullName, password, role };
-      return createStaff({ data: staffRequest });
-    },
+    mutationFn: () => createStaff({ data: { email, fullName, password, role } }),
     onSuccess: (res) => {
       if (res.ok) {
         toast.success("Account created");
