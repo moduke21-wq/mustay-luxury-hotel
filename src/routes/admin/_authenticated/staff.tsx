@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Ban, CheckCircle2, Loader2, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,7 +48,15 @@ function StaffPage() {
   const [role, setRole] = useState<Role>("admin");
 
   const createMut = useMutation({
-    mutationFn: () => createStaff({ data: { email, fullName, password, role } }),
+    mutationFn: async () => {
+      const refreshed = await supabase.auth.refreshSession();
+      if (refreshed.error || !refreshed.data.session) {
+        throw new Error(
+          "Your admin session expired. Please sign in again, then try adding the staff member.",
+        );
+      }
+      return createStaff({ data: { email, fullName, password, role } });
+    },
     onSuccess: (res) => {
       if (res.ok) {
         toast.success("Account created");
@@ -83,6 +92,7 @@ function StaffPage() {
             <Input
               id="staff-email"
               type="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -91,6 +101,8 @@ function StaffPage() {
             <Label htmlFor="staff-password">Temporary password (min 8 characters)</Label>
             <Input
               id="staff-password"
+              type="password"
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
