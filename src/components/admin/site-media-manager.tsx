@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 
+const ADMIN_BACKGROUND_SLOT = "admin-background";
+
 const MEDIA_SLOTS = [
   {
     slot: "hero",
@@ -44,6 +46,11 @@ const MEDIA_SLOTS = [
     label: "Admin dashboard background",
     help: "A private visual backdrop for the Mustay operations dashboard.",
   },
+  {
+    slot: "admin-profile",
+    label: "CEO Mustapha profile photo",
+    help: "The profile photo shown in the admin dashboard header.",
+  },
 ] as const;
 
 type MediaRow = {
@@ -54,8 +61,6 @@ type MediaRow = {
   alt_text: string;
   display_order: number;
 };
-
-const ADMIN_BACKGROUND_SLOT = "admin-background";
 
 export function SiteMediaManager() {
   const queryClient = useQueryClient();

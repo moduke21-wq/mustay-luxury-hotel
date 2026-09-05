@@ -1,7 +1,16 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { BedDouble, LayoutDashboard, LogOut, Search, Settings, Users } from "lucide-react";
+import {
+  BedDouble,
+  LayoutDashboard,
+  LogOut,
+  Moon,
+  Search,
+  Settings,
+  Sun,
+  Users,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,23 +46,39 @@ function AdminLayout() {
   }
 
   const [adminBackground, setAdminBackground] = useState<string | null>(null);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
+    const savedTheme = window.localStorage.getItem("mustay-admin-theme");
+    const isDark = savedTheme === "dark";
+    setDarkMode(isDark);
+    document.documentElement.classList.toggle("dark", isDark);
+
     let active = true;
     void supabase
       .from("site_media" as never)
-      .select("path")
-      .eq("slot", "admin-background")
-      .maybeSingle()
+      .select("slot,path")
+      .in("slot", ["admin-background", "admin-profile"])
       .then(({ data }) => {
-        if (active && data && typeof data === "object" && "path" in data) {
-          setAdminBackground(String(data.path));
+        if (!active || !Array.isArray(data)) return;
+        for (const item of data) {
+          if (!item || typeof item !== "object" || !("slot" in item) || !("path" in item)) continue;
+          if (item.slot === "admin-background") setAdminBackground(String(item.path));
+          if (item.slot === "admin-profile") setProfilePhoto(String(item.path));
         }
       });
     return () => {
       active = false;
     };
   }, []);
+
+  function toggleTheme() {
+    const next = !darkMode;
+    setDarkMode(next);
+    document.documentElement.classList.toggle("dark", next);
+    window.localStorage.setItem("mustay-admin-theme", next ? "dark" : "light");
+  }
 
   return (
     <div
@@ -72,7 +97,24 @@ function AdminLayout() {
       <aside className="hidden w-64 shrink-0 flex-col justify-between bg-navy p-6 text-background md:flex md:min-h-screen">
         <div>
           <div className="border-b border-background/10 pb-6">
-            <p className="font-display text-2xl font-semibold tracking-wide">MUSTAY</p>
+            <div className="flex items-center gap-3">
+              {profilePhoto ? (
+                <img
+                  src={profilePhoto}
+                  alt="CEO Mustapha"
+                  className="h-10 w-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold text-sm font-semibold text-gold-foreground">
+                  CM
+                </div>
+              )}
+              <div>
+                <p className="font-semibold">CEO Mustapha</p>
+                <p className="text-xs text-background/60">Administrator</p>
+              </div>
+            </div>
+            <p className="mt-6 font-display text-2xl font-semibold tracking-wide">MUSTAY</p>
             <p className="mt-1 text-[0.6rem] uppercase tracking-[0.32em] text-gold">Luxury Hotel</p>
           </div>
           <nav className="mt-8 space-y-1">
@@ -98,7 +140,7 @@ function AdminLayout() {
       </aside>
 
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-navy px-4 py-3 text-background md:hidden">
-        <p className="font-display text-lg">Mustay Ops</p>
+        <p className="font-display text-lg">CEO Mustapha</p>
         <Button
           size="sm"
           variant="ghost"
@@ -115,7 +157,19 @@ function AdminLayout() {
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
             Live operations
           </div>
-          <p className="text-sm text-muted-foreground">Mustay Luxury Hotel · Admin</p>
+          <div className="flex items-center gap-4">
+            <p className="text-sm text-muted-foreground">Mustay Luxury Hotel · CEO Mustapha</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${darkMode ? "light" : "dark"} mode`}
+            >
+              {darkMode ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+              {darkMode ? "Light mode" : "Dark mode"}
+            </Button>
+          </div>
         </div>
         <Outlet />
       </main>
