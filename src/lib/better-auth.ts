@@ -21,6 +21,9 @@ const origins = [
   process.env.V0_DEV_APP_URL,
   process.env.V0_BUILD_URL,
   process.env.V0_SANDBOX_URL,
+  "https://mustayluxury-hotel-1mdckte6a-duke-marketplace.vercel.app",
+  "https://mustay-luxury-hotel.vercel.app",
+  "https://mustayluxury-hotel.vercel.app",
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
   process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
