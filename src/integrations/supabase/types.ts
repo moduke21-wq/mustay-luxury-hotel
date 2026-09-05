@@ -113,6 +113,7 @@ export type Database = {
           capacity: number
           category: string
           created_at: string
+          description: string
           floor: number
           id: string
           images: string[]
@@ -126,6 +127,7 @@ export type Database = {
           capacity?: number
           category: string
           created_at?: string
+          description?: string
           floor?: number
           id?: string
           images?: string[]
@@ -139,6 +141,7 @@ export type Database = {
           capacity?: number
           category?: string
           created_at?: string
+          description?: string
           floor?: number
           id?: string
           images?: string[]

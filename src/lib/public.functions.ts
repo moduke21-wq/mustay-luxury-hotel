@@ -35,6 +35,7 @@ export type PublicCategory = {
   price: number;
   capacity: number;
   bedType: string;
+  description: string;
   amenities: string[];
   images: string[];
   totalRooms: number;
@@ -45,7 +46,7 @@ export const getPublicRooms = createServerFn({ method: "GET" }).handler(async ()
   const supabase = publicClient();
   const { data, error } = await supabase
     .from("rooms")
-    .select("room_number, category, price_per_night, capacity, bed_type, amenities, images, status")
+    .select("room_number, category, price_per_night, capacity, bed_type, amenities, images, status, description")
     .order("room_number");
 
   if (error) return { categories: [] as PublicCategory[], availableNow: 0 };
@@ -62,6 +63,7 @@ export const getPublicRooms = createServerFn({ method: "GET" }).handler(async ()
         price: Number(room.price_per_night),
         capacity: room.capacity,
         bedType: room.bed_type,
+        description: room.description ?? "",
         amenities: room.amenities ?? [],
         images: [],
         totalRooms: 1,
@@ -71,6 +73,7 @@ export const getPublicRooms = createServerFn({ method: "GET" }).handler(async ()
       existing.totalRooms += 1;
       if (room.status === "available") existing.availableRooms += 1;
       existing.capacity = Math.max(existing.capacity, room.capacity);
+      if (!existing.description && room.description) existing.description = room.description;
     }
     const paths = imagePaths.get(room.category) ?? [];
     for (const img of room.images ?? []) {
