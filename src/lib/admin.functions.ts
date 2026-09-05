@@ -14,6 +14,7 @@ export type AdminRoom = {
   imageUrls: string[];
   status: string;
   floor: number;
+  description: string;
 };
 
 export type AdminBooking = {
@@ -69,6 +70,7 @@ export const getAdminOverview = createServerFn({ method: "GET" })
         price_per_night: Number(r.price_per_night),
         amenities: r.amenities ?? [],
         images: r.images ?? [],
+        description: r.description ?? "",
         imageUrls: (r.images ?? []).map((p) => urlByPath.get(p) ?? "").filter(Boolean),
       })) as AdminRoom[],
       bookings: (bookingRows ?? []).map((b) => ({
@@ -173,4 +175,40 @@ export const removeRoomImage = createServerFn({ method: "POST" })
     if (error) return { ok: false as const, message: error.message };
     await supabase.storage.from("room-gallery").remove([data.path]);
     return { ok: true as const };
+  });
+
+const roomInput = z.object({
+  room_number: z.string().trim().min(1).max(20),
+  category: z.string().trim().min(2).max(60),
+  price_per_night: z.coerce.number().min(0).max(1000000),
+  capacity: z.coerce.number().int().min(1).max(12),
+  bed_type: z.string().trim().min(2).max(60),
+  floor: z.coerce.number().int().min(0).max(20),
+  description: z.string().trim().max(1000),
+  amenities: z.array(z.string().trim().min(1).max(60)).max(20),
+});
+
+export const createRoom = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => roomInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("rooms").insert({ ...data, status: "available", images: [] });
+    return error ? { ok: false as const, message: error.message } : { ok: true as const };
+  });
+
+export const updateRoom = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => roomInput.extend({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { id, ...patch } = data;
+    const { error } = await context.supabase.from("rooms").update(patch).eq("id", id);
+    return error ? { ok: false as const, message: error.message } : { ok: true as const };
+  });
+
+export const deleteRoom = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ roomId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("rooms").delete().eq("id", data.roomId);
+    return error ? { ok: false as const, message: error.message } : { ok: true as const };
   });
