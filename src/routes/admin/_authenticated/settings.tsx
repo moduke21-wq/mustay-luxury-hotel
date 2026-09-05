@@ -72,14 +72,36 @@ function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
-      <h1 className="font-display text-3xl font-semibold">Website settings</h1>
+      <h1 className="font-display text-3xl font-semibold">Admin settings</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Everything here appears on the public homepage. Changes go live immediately.
+        Private controls for CEO Mustapha, website content, rooms, media, and contact details.
       </p>
+
+      <section className="mt-6 rounded-xl border border-gold/30 bg-gold/10 p-4">
+        <h2 className="font-display text-xl font-semibold">CEO Mustapha profile</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          This private administrator profile is separate from public website content. Manage your
+          name and profile photo here; staff cannot see or edit it.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() =>
+              document.getElementById("admin-profile-media")?.scrollIntoView({ behavior: "smooth" })
+            }
+          >
+            Manage profile photo
+          </Button>
+        </div>
+      </section>
 
       {isLoading && <p className="mt-4 text-sm text-muted-foreground">Loading…</p>}
 
       <section className="mt-6 space-y-4 rounded-xl border border-border bg-card p-4">
+        <div className="rounded-md border border-gold/30 bg-gold/10 p-3 text-sm text-muted-foreground">
+          Contact settings, including the WhatsApp number, are administrator-only. Staff can view
+          operations but cannot change public contact details.
+        </div>
         {SETTING_KEYS.map((key) => (
           <div key={key}>
             <Label htmlFor={key}>{SETTING_LABELS[key]}</Label>

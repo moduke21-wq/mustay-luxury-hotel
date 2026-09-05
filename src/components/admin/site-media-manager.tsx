@@ -131,7 +131,7 @@ export function SiteMediaManager() {
   }
 
   return (
-    <section className="mt-6 rounded-xl border border-border bg-card p-4">
+    <section id="admin-profile-media" className="mt-6 rounded-xl border border-border bg-card p-4">
       <div className="flex items-start gap-3">
         <ImagePlus className="mt-1 h-5 w-5 text-gold" />
         <div>

@@ -147,6 +147,9 @@ function RoomsPage() {
                 ) : (
                   <RoomPlaceholder label={room.category} className="h-32 w-full" />
                 )}
+                <span className="absolute bottom-2 left-2 rounded-md bg-navy px-2.5 py-1 text-sm font-semibold text-background shadow-sm">
+                  {formatNLe(room.price_per_night)} / night
+                </span>
                 <span
                   className={`absolute right-2 top-2 rounded-full px-2.5 py-1 text-[0.65rem] font-medium ${STATUS_STYLE[room.status]}`}
                 >
@@ -162,7 +165,10 @@ function RoomsPage() {
               <div className="p-4">
                 <p className="font-display text-2xl font-semibold">Room {room.room_number}</p>
                 <p className="text-xs text-muted-foreground">
-                  {room.category} · Floor {room.floor} · {formatNLe(room.price_per_night)}
+                  {room.category} · Floor {room.floor}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-gold">
+                  {formatNLe(room.price_per_night)} per night
                 </p>
                 {room.description && (
                   <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
@@ -203,7 +209,7 @@ function RoomsPage() {
                     className="flex-1"
                     onClick={() => setEditRoom(room)}
                   >
-                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                    <Pencil className="mr-2 h-4 w-4" /> Price & details
                   </Button>
                 </div>
               </div>
