@@ -19,6 +19,7 @@ import {
 } from "@/lib/settings.functions";
 import { formatNLe } from "@/lib/hotel";
 import { PaymentPreview } from "@/components/admin/payment-preview";
+import { SiteContentMap } from "@/components/admin/site-content-map";
 
 export const Route = createFileRoute("/admin/_authenticated/settings")({
   head: () => ({
@@ -97,6 +98,8 @@ function SettingsPage() {
           Save website content
         </Button>
       </section>
+
+      <SiteContentMap />
 
       <PaymentPreview />
 

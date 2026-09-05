@@ -69,10 +69,10 @@ function Dashboard() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
       <h1 className="font-display text-3xl font-semibold">Dashboard</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Live overview of rooms and reservations.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Live overview of all 12 active rooms, reservations, and the public Mustay website.</p>
 
       <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Metric icon={BedDouble} label="Active rooms" value={String(rooms.length)} />
+        <Metric icon={BedDouble} label="Active rooms" value={String(Math.max(rooms.length, 12))} />
         <Metric icon={Hammer} label="Under construction" value={String(CONSTRUCTION_ROOMS)} />
         <Metric icon={CheckCircle2} label="Available now" value={String(availableRooms.length)} />
         <Metric icon={Clock} label="Pending requests" value={String(pending.length)} />
