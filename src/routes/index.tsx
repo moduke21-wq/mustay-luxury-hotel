@@ -441,20 +441,17 @@ function LandingPage() {
     );
   }
 
-  const uploadedGallery = mediaBySlot.get("gallery");
-  const galleryItems = [
-    ...(uploadedGallery
-      ? [
-          {
-            src: uploadedGallery.path,
-            alt: uploadedGallery.alt_text || "Mustay gallery image",
-            cat: "exterior",
-            label: "Gallery",
-          },
-        ]
-      : []),
-    ...GALLERY,
-  ].filter((g) => galleryFilter === "all" || g.cat === galleryFilter);
+  const uploadedGalleryItems = media
+    .filter((item) => item.slot === "gallery")
+    .map((item) => ({
+      src: item.path,
+      alt: item.alt_text || "Mustay gallery image",
+      cat: "all" as const,
+      label: item.label || "Gallery",
+    }));
+  const galleryItems = (uploadedGalleryItems.length > 0 ? uploadedGalleryItems : GALLERY).filter(
+    (g) => galleryFilter === "all" || g.cat === galleryFilter,
+  );
 
   return (
     <div className="mustay-landing">
