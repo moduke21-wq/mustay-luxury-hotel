@@ -176,6 +176,20 @@ const WhatsAppIcon = (
 
 function LandingPage() {
   const { data } = useSuspenseQuery(roomsQuery);
+  const { data: settings } = useSuspenseQuery(settingsQuery);
+
+  const WA = (settings["whatsapp_number"] || HOTEL_WHATSAPP).replace(/\D/g, "");
+  const WA_ENQUIRE = `https://wa.me/${WA}?text=${encodeURIComponent(
+    "Hello Mustay Luxury Hotel, I'd like to enquire about a stay.",
+  )}`;
+  const phone1 = settings["phone_primary"] || "+232 79 494-545";
+  const phone2 = settings["phone_secondary"] || "+232 72 080-818";
+  const tel = (v: string) => `tel:${v.replace(/[^\d+]/g, "")}`;
+  const address = settings["address"] || "Abu Street, Shelmingo, Manjama Section, Bo City, Sierra Leone";
+  const heroTitle = settings["hero_title"] || "Welcome to Mustay Luxury Hotel";
+  const heroSubtitle = settings["hero_subtitle"] || "Luxury, comfort & quality time in Bo City";
+  const aboutText = settings["about_text"] || "";
+  const expansionText = settings["expansion_text"] || "";
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
