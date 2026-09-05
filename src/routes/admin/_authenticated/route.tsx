@@ -47,6 +47,8 @@ function AdminLayout() {
 
   const [adminBackground, setAdminBackground] = useState<string | null>(null);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [adminName, setAdminName] = useState("CEO Mustapha");
+  const [adminEmail, setAdminEmail] = useState("");
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
@@ -56,6 +58,15 @@ function AdminLayout() {
     document.documentElement.classList.toggle("dark", isDark);
 
     let active = true;
+    void supabase.auth.getUser().then(({ data }) => {
+      if (!active || !data.user) return;
+      setAdminEmail(data.user.email ?? "");
+      setAdminName(
+        String(
+          data.user.user_metadata?.full_name ?? data.user.user_metadata?.name ?? "CEO Mustapha",
+        ),
+      );
+    });
     void supabase
       .from("site_media" as never)
       .select("slot,path")
@@ -110,8 +121,8 @@ function AdminLayout() {
                 </div>
               )}
               <div>
-                <p className="font-semibold">CEO Mustapha</p>
-                <p className="text-xs text-background/60">Administrator</p>
+                <p className="font-semibold">{adminName}</p>
+                <p className="text-xs text-background/60">{adminEmail || "Administrator"}</p>
               </div>
             </div>
             <p className="mt-6 font-display text-2xl font-semibold tracking-wide">MUSTAY</p>
@@ -140,7 +151,12 @@ function AdminLayout() {
       </aside>
 
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-navy px-4 py-3 text-background md:hidden">
-        <p className="font-display text-lg">CEO Mustapha</p>
+        <div className="flex items-center gap-2">
+          {profilePhoto ? (
+            <img src={profilePhoto} alt={adminName} className="h-8 w-8 rounded-full object-cover" />
+          ) : null}
+          <p className="font-display text-lg">{adminName}</p>
+        </div>
         <Button
           size="sm"
           variant="ghost"

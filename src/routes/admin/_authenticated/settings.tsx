@@ -83,6 +83,17 @@ function SettingsPage() {
           This private administrator profile is separate from public website content. Manage your
           name and profile photo here; staff cannot see or edit it.
         </p>
+        <div className="mt-4 grid gap-3 rounded-lg border border-border bg-card p-4 sm:grid-cols-[auto_1fr] sm:items-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gold text-lg font-semibold text-gold-foreground">
+            CM
+          </div>
+          <div>
+            <p className="font-semibold">CEO Mustapha</p>
+            <p className="text-sm text-muted-foreground">
+              Your private administrator profile and password settings.
+            </p>
+          </div>
+        </div>
         <div className="mt-3 flex flex-wrap gap-2">
           <Button
             variant="outline"
