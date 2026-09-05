@@ -413,8 +413,8 @@ function LandingPage() {
       <section className="hero" id="home">
         <div className="hero-copy">
           <div className="hero-eyebrow">Bo City, Sierra Leone</div>
-          <h1>Welcome to Mustay Luxury Hotel</h1>
-          <div className="hero-sub">Luxury, comfort &amp; quality time in Bo City</div>
+          <h1>{heroTitle}</h1>
+          <div className="hero-sub">{heroSubtitle}</div>
           <p className="hero-desc">
             A peaceful and comfortable place to relax, enjoy quality time with your loved ones, and
             experience warm hospitality in the heart of Bo City.
