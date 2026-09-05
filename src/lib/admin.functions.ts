@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertAdmin } from "@/lib/admin-auth";
 
 export type AdminRoom = {
   id: string;
@@ -51,6 +52,7 @@ async function signed(paths: string[]): Promise<string[]> {
 export const getAdminOverview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
     const { supabase } = context;
     const [{ data: roomRows }, { data: bookingRows }] = await Promise.all([
       supabase.from("rooms").select("*").order("room_number"),
@@ -85,6 +87,7 @@ export const confirmBooking = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ bookingId: z.string().uuid(), roomId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
     const { data: code, error } = await context.supabase.rpc("confirm_booking", {
       p_booking_id: data.bookingId,
       p_room_id: data.roomId,
@@ -105,6 +108,7 @@ export const updateBookingStatus = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
     const { supabase } = context;
     const patch: { status: string; payment_status?: string } = { status: data.status };
     if (data.markPaid) patch.payment_status = "paid";
@@ -146,6 +150,7 @@ export const setRoomStatus = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
     const { error } = await context.supabase
       .from("rooms")
       .update({ status: data.status })
@@ -157,6 +162,7 @@ export const addRoomImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ roomId: z.string().uuid(), path: z.string().min(3).max(300) }).parse(d))
   .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
     const { supabase } = context;
     const { data: room } = await supabase.from("rooms").select("images").eq("id", data.roomId).maybeSingle();
     const images = [...(room?.images ?? []), data.path];
@@ -168,6 +174,7 @@ export const removeRoomImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ roomId: z.string().uuid(), path: z.string().min(3).max(300) }).parse(d))
   .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
     const { supabase } = context;
     const { data: room } = await supabase.from("rooms").select("images").eq("id", data.roomId).maybeSingle();
     const images = (room?.images ?? []).filter((p) => p !== data.path);
@@ -192,6 +199,7 @@ export const createRoom = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => roomInput.parse(d))
   .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
     const { error } = await context.supabase.from("rooms").insert({ ...data, status: "available", images: [] });
     return error ? { ok: false as const, message: error.message } : { ok: true as const };
   });
@@ -200,6 +208,7 @@ export const updateRoom = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => roomInput.extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
     const { id, ...patch } = data;
     const { error } = await context.supabase.from("rooms").update(patch).eq("id", id);
     return error ? { ok: false as const, message: error.message } : { ok: true as const };
@@ -209,6 +218,7 @@ export const deleteRoom = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ roomId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
     const { error } = await context.supabase.from("rooms").delete().eq("id", data.roomId);
     return error ? { ok: false as const, message: error.message } : { ok: true as const };
   });

@@ -18,6 +18,7 @@ import {
   type SettingKey,
 } from "@/lib/settings.functions";
 import { formatNLe } from "@/lib/hotel";
+import { PaymentPreview } from "@/components/admin/payment-preview";
 
 export const Route = createFileRoute("/admin/_authenticated/settings")({
   head: () => ({
@@ -96,6 +97,8 @@ function SettingsPage() {
           Save website content
         </Button>
       </section>
+
+      <PaymentPreview />
 
       <section className="mt-6 rounded-xl border border-border bg-card p-4">
         <h2 className="font-display text-xl font-semibold">Room pricing</h2>
