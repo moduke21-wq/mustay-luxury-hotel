@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { assertAdmin } from "@/lib/admin-auth";
+import { assertAdmin, assertStaffOrAdmin } from "@/lib/admin-auth";
 
 export type AdminRoom = {
   id: string;
@@ -100,6 +100,35 @@ export const getAdminOverview = createServerFn({ method: "GET" })
         alt_text: item.alt_text,
       })),
     };
+  });
+
+export const getRoomManagement = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertStaffOrAdmin(context.supabase, context.userId);
+    const { data, error } = await context.supabase
+      .from("rooms")
+      .select(
+        "id, room_number, category, price_per_night, capacity, bed_type, floor, description, amenities, images, status",
+      )
+      .order("room_number");
+    if (error) throw error;
+    const rows = data ?? [];
+    const paths = rows
+      .flatMap((room) => room.images ?? [])
+      .filter((path) => !/^https?:\/\//i.test(path));
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: signedRows } = paths.length
+      ? await supabaseAdmin.storage.from("room-gallery").createSignedUrls(paths, 60 * 60 * 24)
+      : { data: [] };
+    const urls = new Map(paths.map((path, index) => [path, signedRows?.[index]?.signedUrl ?? ""]));
+    return rows.map((room) => ({
+      ...room,
+      price_per_night: Number(room.price_per_night),
+      imageUrls: (room.images ?? []).map((path) =>
+        /^https?:\/\//i.test(path) ? path : (urls.get(path) ?? ""),
+      ),
+    }));
   });
 
 export const confirmBooking = createServerFn({ method: "POST" })
@@ -249,7 +278,7 @@ export const updateRoom = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => roomInput.extend({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context.supabase, context.userId);
+    await assertStaffOrAdmin(context.supabase, context.userId);
     const { id, ...patch } = data;
     const { error } = await context.supabase.from("rooms").update(patch).eq("id", id);
     return error ? { ok: false as const, message: error.message } : { ok: true as const };
