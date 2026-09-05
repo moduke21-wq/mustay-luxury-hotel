@@ -316,7 +316,7 @@ function RoomTypeSettings({
     },
     onSuccess: (result) => {
       if (!result.ok) return toast.error(result.message);
-      toast.success(`${room.category} settings saved`);
+      toast.success(`${category} settings saved`);
       onSaved();
     },
     onError: (error: Error) => toast.error(error.message),
@@ -325,7 +325,7 @@ function RoomTypeSettings({
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="font-display text-xl font-semibold">{room.category}</p>
+          <p className="font-display text-xl font-semibold">{category}</p>
           <p className="text-xs text-muted-foreground">
             {room ? `Room ${room.room_number}` : `No ${category} room loaded`}
           </p>
@@ -338,7 +338,7 @@ function RoomTypeSettings({
         <div>
           <Label htmlFor={`type-price-${room.id}`}>Price per night (NLe)</Label>
           <Input
-            id={`type-price-${room.id}`}
+            id={`type-price-${category.replace(/\s+/g, "-").toLowerCase()}`}
             inputMode="decimal"
             value={price}
             onChange={(event) => setPrice(event.target.value)}
@@ -347,7 +347,7 @@ function RoomTypeSettings({
         <div>
           <Label htmlFor={`type-description-${room.id}`}>What this room offers</Label>
           <Textarea
-            id={`type-description-${room.id}`}
+            id={`type-description-${category.replace(/\s+/g, "-").toLowerCase()}`}
             rows={3}
             value={description}
             onChange={(event) => setDescription(event.target.value)}
@@ -356,7 +356,7 @@ function RoomTypeSettings({
         <div>
           <Label htmlFor={`type-amenities-${room.id}`}>Features, separated by commas</Label>
           <Input
-            id={`type-amenities-${room.id}`}
+            id={`type-amenities-${category.replace(/\s+/g, "-").toLowerCase()}`}
             value={amenities}
             onChange={(event) => setAmenities(event.target.value)}
           />
