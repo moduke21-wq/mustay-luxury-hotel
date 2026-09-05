@@ -1,18 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
-import { ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ImagePlus, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import standardImg from "@/assets/mustay/standard-room.asset.json";
+import deluxeImg from "@/assets/mustay/deluxe-room.asset.json";
 import { RoomPlaceholder } from "@/components/RoomPlaceholder";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import {
   addRoomImage,
+  createRoom,
+  deleteRoom,
   getAdminOverview,
   removeRoomImage,
   setRoomStatus,
+  updateRoom,
   type AdminRoom,
 } from "@/lib/admin.functions";
 import { ROOM_STATUS_LABEL, formatNLe } from "@/lib/hotel";
@@ -21,7 +29,7 @@ export const Route = createFileRoute("/admin/_authenticated/rooms")({
   head: () => ({
     meta: [
       { title: "Room & Housekeeping Manager — Mustay Luxury" },
-      { name: "description", content: "Manage room status, housekeeping and room photography for Mustay Luxury." },
+      { name: "description", content: "Add rooms, set prices and descriptions, manage status and photos for Mustay Luxury." },
       { name: "robots", content: "noindex" },
       { property: "og:title", content: "Room Manager — Mustay Luxury" },
       { property: "og:description", content: "Internal room and housekeeping management." },
@@ -40,13 +48,41 @@ const STATUS_STYLE: Record<string, string> = {
   maintenance: "bg-muted text-muted-foreground",
 };
 
+const SITE_IMAGE: Record<string, string> = {
+  "Standard Room": standardImg.url,
+  "Deluxe Suite": deluxeImg.url,
+};
+
+type RoomForm = {
+  room_number: string;
+  category: string;
+  price_per_night: string;
+  capacity: string;
+  bed_type: string;
+  floor: string;
+  description: string;
+  amenities: string;
+};
+
+const EMPTY_FORM: RoomForm = {
+  room_number: "",
+  category: "Standard Room",
+  price_per_night: "700",
+  capacity: "2",
+  bed_type: "Double Bed",
+  floor: "1",
+  description: "",
+  amenities: "24/7 power & water, Free Wi-Fi, Smart TV, Air conditioning, Private bathroom",
+};
+
 function RoomsPage() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["admin-overview"],
     queryFn: () => getAdminOverview(),
   });
-  const [editing, setEditing] = useState<AdminRoom | null>(null);
+  const [photoRoom, setPhotoRoom] = useState<AdminRoom | null>(null);
+  const [editRoom, setEditRoom] = useState<AdminRoom | "new" | null>(null);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
 
@@ -60,63 +96,245 @@ function RoomsPage() {
   });
 
   const rooms = data?.rooms ?? [];
-  const current = editing ? (rooms.find((r) => r.id === editing.id) ?? editing) : null;
+  const current = photoRoom ? (rooms.find((r) => r.id === photoRoom.id) ?? photoRoom) : null;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
-      <h1 className="font-display text-3xl font-semibold">Rooms & housekeeping</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Tap a status chip to change it, or open a room to manage photos.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl font-semibold">Rooms & housekeeping</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Add rooms, set the nightly price and text guests read, and manage photos.
+          </p>
+        </div>
+        <Button className="bg-navy text-background hover:bg-navy/90" onClick={() => setEditRoom("new")}>
+          <Plus className="mr-2 h-4 w-4" /> Add room
+        </Button>
+      </div>
 
       {isLoading && <p className="mt-4 text-sm text-muted-foreground">Loading rooms…</p>}
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {rooms.map((room) => (
-          <article key={room.id} className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-start justify-between">
-              <div>
+        {rooms.map((room) => {
+          const preview = room.imageUrls[0] ?? SITE_IMAGE[room.category];
+          return (
+            <article key={room.id} className="overflow-hidden rounded-xl border border-border bg-card">
+              <div className="relative h-32 w-full bg-secondary">
+                {preview ? (
+                  <img
+                    src={preview}
+                    alt={`Room ${room.room_number}`}
+                    loading="lazy"
+                    className="h-32 w-full object-cover"
+                  />
+                ) : (
+                  <RoomPlaceholder label={room.category} className="h-32 w-full" />
+                )}
+                <span
+                  className={`absolute right-2 top-2 rounded-full px-2.5 py-1 text-[0.65rem] font-medium ${STATUS_STYLE[room.status]}`}
+                >
+                  {ROOM_STATUS_LABEL[room.status] ?? room.status}
+                </span>
+                {room.imageUrls.length === 0 && (
+                  <span className="absolute bottom-2 left-2 rounded-full bg-background/85 px-2 py-1 text-[0.6rem] text-muted-foreground">
+                    Website default photo
+                  </span>
+                )}
+              </div>
+
+              <div className="p-4">
                 <p className="font-display text-2xl font-semibold">Room {room.room_number}</p>
                 <p className="text-xs text-muted-foreground">
                   {room.category} · Floor {room.floor} · {formatNLe(room.price_per_night)}
                 </p>
+                {room.description && (
+                  <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{room.description}</p>
+                )}
+
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {STATUSES.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      disabled={statusMut.isPending || room.status === s}
+                      onClick={() => statusMut.mutate({ roomId: room.id, status: s })}
+                      className={`rounded-full border px-2.5 py-1 text-[0.65rem] transition-colors disabled:opacity-40 ${
+                        room.status === s ? "border-gold bg-gold/10 text-gold" : "border-border hover:bg-secondary"
+                      }`}
+                    >
+                      {ROOM_STATUS_LABEL[s]}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-3 flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => setPhotoRoom(room)}>
+                    <ImagePlus className="mr-2 h-4 w-4" /> Photos ({room.imageUrls.length})
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => setEditRoom(room)}>
+                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                  </Button>
+                </div>
               </div>
-              <span className={`rounded-full px-2.5 py-1 text-[0.65rem] font-medium ${STATUS_STYLE[room.status]}`}>
-                {ROOM_STATUS_LABEL[room.status] ?? room.status}
-              </span>
-            </div>
-
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {STATUSES.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  disabled={statusMut.isPending || room.status === s}
-                  onClick={() => statusMut.mutate({ roomId: room.id, status: s })}
-                  className={`rounded-full border px-2.5 py-1 text-[0.65rem] transition-colors disabled:opacity-40 ${
-                    room.status === s ? "border-gold bg-gold/10 text-gold" : "border-border hover:bg-secondary"
-                  }`}
-                >
-                  {ROOM_STATUS_LABEL[s]}
-                </button>
-              ))}
-            </div>
-
-            <Button variant="outline" size="sm" className="mt-3 w-full" onClick={() => setEditing(room)}>
-              <ImagePlus className="mr-2 h-4 w-4" /> Photos ({room.imageUrls.length})
-            </Button>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
 
-      <Dialog open={!!current} onOpenChange={(open) => !open && setEditing(null)}>
+      <Dialog open={!!current} onOpenChange={(open) => !open && setPhotoRoom(null)}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl">
-              Room {current?.room_number} photos
-            </DialogTitle>
+            <DialogTitle className="font-display text-2xl">Room {current?.room_number} photos</DialogTitle>
           </DialogHeader>
           {current && <PhotoManager room={current} onChanged={invalidate} />}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!editRoom} onOpenChange={(open) => !open && setEditRoom(null)}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl">
+              {editRoom === "new" ? "Add a room" : `Edit room ${editRoom?.room_number ?? ""}`}
+            </DialogTitle>
+          </DialogHeader>
+          {editRoom && (
+            <RoomEditor
+              room={editRoom === "new" ? null : editRoom}
+              onDone={() => {
+                setEditRoom(null);
+                invalidate();
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function RoomEditor({ room, onDone }: { room: AdminRoom | null; onDone: () => void }) {
+  const [form, setForm] = useState<RoomForm>(EMPTY_FORM);
+
+  useEffect(() => {
+    if (!room) {
+      setForm(EMPTY_FORM);
+      return;
+    }
+    setForm({
+      room_number: room.room_number,
+      category: room.category,
+      price_per_night: String(room.price_per_night),
+      capacity: String(room.capacity),
+      bed_type: room.bed_type,
+      floor: String(room.floor),
+      description: room.description ?? "",
+      amenities: (room.amenities ?? []).join(", "),
+    });
+  }, [room]);
+
+  const payload = () => ({
+    room_number: form.room_number.trim(),
+    category: form.category.trim(),
+    price_per_night: Number(form.price_per_night || 0),
+    capacity: Number(form.capacity || 1),
+    bed_type: form.bed_type.trim(),
+    floor: Number(form.floor || 0),
+    description: form.description.trim(),
+    amenities: form.amenities
+      .split(",")
+      .map((a) => a.trim())
+      .filter(Boolean),
+  });
+
+  const saveMut = useMutation({
+    mutationFn: () => (room ? updateRoom({ data: { id: room.id, ...payload() } }) : createRoom({ data: payload() })),
+    onSuccess: (res) => {
+      if (!res.ok) {
+        toast.error(res.message);
+        return;
+      }
+      toast.success(room ? "Room saved" : "Room added");
+      onDone();
+    },
+    onError: () => toast.error("Please check the details and try again."),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: () => deleteRoom({ data: { roomId: room!.id } }),
+    onSuccess: (res) => {
+      if (!res.ok) {
+        toast.error(res.message);
+        return;
+      }
+      toast.success("Room removed");
+      onDone();
+    },
+  });
+
+  const field = (key: keyof RoomForm) => ({
+    value: form[key],
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setForm((f) => ({ ...f, [key]: e.target.value })),
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <Label htmlFor="room_number">Room number</Label>
+          <Input id="room_number" {...field("room_number")} />
+        </div>
+        <div>
+          <Label htmlFor="category">Room type</Label>
+          <Input id="category" {...field("category")} />
+        </div>
+        <div>
+          <Label htmlFor="price">Price per night (NLe)</Label>
+          <Input id="price" inputMode="numeric" {...field("price_per_night")} />
+        </div>
+        <div>
+          <Label htmlFor="capacity">Sleeps</Label>
+          <Input id="capacity" inputMode="numeric" {...field("capacity")} />
+        </div>
+        <div>
+          <Label htmlFor="bed">Bed type</Label>
+          <Input id="bed" {...field("bed_type")} />
+        </div>
+        <div>
+          <Label htmlFor="floor">Floor</Label>
+          <Input id="floor" inputMode="numeric" {...field("floor")} />
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="description">Description shown to guests</Label>
+        <Textarea id="description" rows={3} {...field("description")} />
+      </div>
+      <div>
+        <Label htmlFor="amenities">Features (separate with commas)</Label>
+        <Textarea id="amenities" rows={2} {...field("amenities")} />
+      </div>
+
+      <div className="flex flex-wrap gap-2 pt-1">
+        <Button
+          className="bg-navy text-background hover:bg-navy/90"
+          disabled={saveMut.isPending || !form.room_number.trim()}
+          onClick={() => saveMut.mutate()}
+        >
+          {saveMut.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {room ? "Save changes" : "Add room"}
+        </Button>
+        {room && (
+          <Button
+            variant="outline"
+            className="text-red-600 hover:text-red-700"
+            disabled={deleteMut.isPending}
+            onClick={() => deleteMut.mutate()}
+          >
+            <Trash2 className="mr-2 h-4 w-4" /> Delete room
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -166,6 +384,8 @@ function PhotoManager({ room, onChanged }: { room: AdminRoom; onChanged: () => v
     if (inputRef.current) inputRef.current.value = "";
   }
 
+  const siteImage = SITE_IMAGE[room.category];
+
   return (
     <div>
       <div
@@ -201,10 +421,22 @@ function PhotoManager({ room, onChanged }: { room: AdminRoom; onChanged: () => v
         />
       </div>
 
+      {room.images.length === 0 && (
+        <div className="mt-4">
+          <p className="text-xs text-muted-foreground">
+            No photo uploaded yet — this is the picture guests currently see on the website.
+          </p>
+          <div className="mt-2 overflow-hidden rounded-lg border border-border">
+            {siteImage ? (
+              <img src={siteImage} alt={`${room.category} on the website`} className="h-40 w-full object-cover" />
+            ) : (
+              <RoomPlaceholder label={room.category} className="h-40 w-full" />
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {room.images.length === 0 && (
-          <RoomPlaceholder label={room.category} className="col-span-2 h-32 rounded-lg sm:col-span-3" />
-        )}
         {room.images.map((path, i) => (
           <div key={path} className="group relative overflow-hidden rounded-lg border border-border">
             <img
