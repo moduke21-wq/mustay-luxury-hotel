@@ -59,7 +59,20 @@ export const auth = betterAuth({
       },
     },
   },
-  plugins: [admin(), tanstackStartCookies()],
+  plugins: [
+    admin({
+      adminRoles: ["admin", "super_admin"],
+      defaultRole: "staff",
+      roles: {
+        admin: {},
+        super_admin: {},
+        staff: {},
+        manager: {},
+        receptionist: {},
+      },
+    }),
+    tanstackStartCookies(),
+  ],
   ...(process.env.NODE_ENV === "development"
     ? {
         advanced: {

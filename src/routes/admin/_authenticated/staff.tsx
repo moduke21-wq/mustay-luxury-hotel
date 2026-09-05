@@ -51,7 +51,7 @@ function StaffPage() {
     mutationFn: () => inviteOwner({ data: undefined }),
     onSuccess: (res) => {
       if (res.ok) {
-        toast.success("Owner setup invitation sent to mustaybookkeepingservices@gmail.com");
+        toast.success(`${res.message} Setup password: ${res.setupPassword}`, { duration: 15000 });
         invalidate();
       } else toast.error(res.message);
     },
