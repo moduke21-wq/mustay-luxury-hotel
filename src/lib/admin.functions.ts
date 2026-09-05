@@ -42,11 +42,19 @@ export type AdminBooking = {
 
 async function signed(paths: string[]): Promise<string[]> {
   if (paths.length === 0) return [];
+  const remote = new Map(
+    paths.filter((path) => /^https?:\/\//i.test(path)).map((path) => [path, path]),
+  );
+  const storagePaths = paths.filter((path) => !/^https?:\/\//i.test(path));
+  if (storagePaths.length === 0) return paths.map((path) => remote.get(path) ?? "").filter(Boolean);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin.storage
     .from("room-gallery")
-    .createSignedUrls(paths, 60 * 60 * 24 * 7);
-  return (data ?? []).map((d) => d.signedUrl).filter(Boolean) as string[];
+    .createSignedUrls(storagePaths, 60 * 60 * 24 * 7);
+  const signedByPath = new Map(
+    storagePaths.map((path, index) => [path, data?.[index]?.signedUrl ?? ""]),
+  );
+  return paths.map((path) => remote.get(path) ?? signedByPath.get(path) ?? "").filter(Boolean);
 }
 
 export const getAdminOverview = createServerFn({ method: "GET" })
@@ -54,9 +62,14 @@ export const getAdminOverview = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabase } = context;
-    const [{ data: roomRows }, { data: bookingRows }] = await Promise.all([
+    const [{ data: roomRows }, { data: bookingRows }, { data: mediaRows }] = await Promise.all([
       supabase.from("rooms").select("*").order("room_number"),
       supabase.from("bookings").select("*").order("created_at", { ascending: false }).limit(200),
+      supabase
+        .from("site_media")
+        .select("id, path, label, alt_text, display_order")
+        .eq("slot", "gallery")
+        .order("display_order"),
     ]);
 
     const rooms = roomRows ?? [];
@@ -80,12 +93,20 @@ export const getAdminOverview = createServerFn({ method: "GET" })
         total_amount: Number(b.total_amount),
         room_number: b.room_id ? (roomNumberById.get(b.room_id) ?? null) : null,
       })) as AdminBooking[],
+      gallery: (mediaRows ?? []).map((item) => ({
+        id: item.id,
+        path: item.path,
+        label: item.label,
+        alt_text: item.alt_text,
+      })),
     };
   });
 
 export const confirmBooking = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ bookingId: z.string().uuid(), roomId: z.string().uuid() }).parse(d))
+  .inputValidator((d: unknown) =>
+    z.object({ bookingId: z.string().uuid(), roomId: z.string().uuid() }).parse(d),
+  )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { data: code, error } = await context.supabase.rpc("confirm_booking", {
@@ -102,7 +123,14 @@ export const updateBookingStatus = createServerFn({ method: "POST" })
     z
       .object({
         bookingId: z.string().uuid(),
-        status: z.enum(["pending", "confirmed", "checked_in", "checked_out", "cancelled", "no_show"]),
+        status: z.enum([
+          "pending",
+          "confirmed",
+          "checked_in",
+          "checked_out",
+          "cancelled",
+          "no_show",
+        ]),
         markPaid: z.boolean().optional(),
       })
       .parse(d),
@@ -112,7 +140,6 @@ export const updateBookingStatus = createServerFn({ method: "POST" })
     const { supabase } = context;
     const patch: { status: string; payment_status?: string } = { status: data.status };
     if (data.markPaid) patch.payment_status = "paid";
-
 
     const { data: booking, error } = await supabase
       .from("bookings")
@@ -160,11 +187,17 @@ export const setRoomStatus = createServerFn({ method: "POST" })
 
 export const addRoomImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ roomId: z.string().uuid(), path: z.string().min(3).max(300) }).parse(d))
+  .inputValidator((d: unknown) =>
+    z.object({ roomId: z.string().uuid(), path: z.string().min(3).max(1000) }).parse(d),
+  )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabase } = context;
-    const { data: room } = await supabase.from("rooms").select("images").eq("id", data.roomId).maybeSingle();
+    const { data: room } = await supabase
+      .from("rooms")
+      .select("images")
+      .eq("id", data.roomId)
+      .maybeSingle();
     const images = [...(room?.images ?? []), data.path];
     const { error } = await supabase.from("rooms").update({ images }).eq("id", data.roomId);
     return error ? { ok: false as const, message: error.message } : { ok: true as const };
@@ -172,11 +205,17 @@ export const addRoomImage = createServerFn({ method: "POST" })
 
 export const removeRoomImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ roomId: z.string().uuid(), path: z.string().min(3).max(300) }).parse(d))
+  .inputValidator((d: unknown) =>
+    z.object({ roomId: z.string().uuid(), path: z.string().min(3).max(1000) }).parse(d),
+  )
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabase } = context;
-    const { data: room } = await supabase.from("rooms").select("images").eq("id", data.roomId).maybeSingle();
+    const { data: room } = await supabase
+      .from("rooms")
+      .select("images")
+      .eq("id", data.roomId)
+      .maybeSingle();
     const images = (room?.images ?? []).filter((p) => p !== data.path);
     const { error } = await supabase.from("rooms").update({ images }).eq("id", data.roomId);
     if (error) return { ok: false as const, message: error.message };
@@ -200,7 +239,9 @@ export const createRoom = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => roomInput.parse(d))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
-    const { error } = await context.supabase.from("rooms").insert({ ...data, status: "available", images: [] });
+    const { error } = await context.supabase
+      .from("rooms")
+      .insert({ ...data, status: "available", images: [] });
     return error ? { ok: false as const, message: error.message } : { ok: true as const };
   });
 
