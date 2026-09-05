@@ -4,9 +4,9 @@ import { BadgeDollarSign, CheckCircle2, Clock3, CreditCard, XCircle } from "luci
 import { Button } from "@/components/ui/button";
 
 const SAMPLE_PAYMENTS = [
-  { id: "MST-1042", guest: "Sample guest", amount: "NLe 1,600", status: "Awaiting payment" },
-  { id: "MST-1041", guest: "Sample guest", amount: "NLe 700", status: "Paid" },
-  { id: "MST-1040", guest: "Sample guest", amount: "NLe 800", status: "Cancelled" },
+  { id: "MST-1042", guest: "Sample guest", status: "Awaiting payment" },
+  { id: "MST-1041", guest: "Sample guest", status: "Paid" },
+  { id: "MST-1040", guest: "Sample guest", status: "Cancelled" },
 ] as const;
 
 export function PaymentPreview() {
@@ -34,7 +34,7 @@ export function PaymentPreview() {
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
         <PreviewMetric icon={Clock3} label="Awaiting payment" value="1" />
         <PreviewMetric icon={CheckCircle2} label="Paid (sample)" value="1" />
-        <PreviewMetric icon={BadgeDollarSign} label="Test total" value="NLe 2,300" />
+        <PreviewMetric icon={BadgeDollarSign} label="Test transactions" value="3" />
       </div>
 
       <div className="mt-4 flex items-center justify-between rounded-lg bg-secondary px-3 py-3">
@@ -63,9 +63,7 @@ export function PaymentPreview() {
               <p className="font-medium">
                 {payment.id} · {payment.guest}
               </p>
-              <p className="text-xs text-muted-foreground">
-                {payment.amount} · {payment.status}
-              </p>
+              <p className="text-xs text-muted-foreground">{payment.status}</p>
             </div>
             <Button
               size="sm"

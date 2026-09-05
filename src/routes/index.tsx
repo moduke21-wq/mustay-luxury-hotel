@@ -86,7 +86,7 @@ interface RoomShowcase {
   features: string[];
 }
 
-const ROOM_SHOWCASE: RoomShowcase[] = [
+const FALLBACK_ROOM_SHOWCASE: RoomShowcase[] = [
   {
     id: "standard",
     dbCategory: "Standard Room",
@@ -128,7 +128,12 @@ const ROOM_SHOWCASE: RoomShowcase[] = [
 ];
 
 const GALLERY = [
-  { src: galleryExterior.url, alt: "Mustay Luxury Hotel exterior", cat: "exterior", label: "Exterior" },
+  {
+    src: galleryExterior.url,
+    alt: "Mustay Luxury Hotel exterior",
+    cat: "exterior",
+    label: "Exterior",
+  },
   { src: galleryTv.url, alt: "Room with television", cat: "rooms", label: "Rooms" },
   { src: galleryBathroom.url, alt: "Bathroom", cat: "rooms", label: "Rooms" },
   { src: galleryBed.url, alt: "Guest bed", cat: "rooms", label: "Rooms" },
@@ -155,13 +160,29 @@ function todayISO(offsetDays = 0) {
 }
 
 const CheckIcon = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <polyline points="20 6 9 17 4 12" />
   </svg>
 );
 
 const PhoneIcon = (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+  <svg
+    width="17"
+    height="17"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.7"
+  >
     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
   </svg>
 );
@@ -185,11 +206,36 @@ function LandingPage() {
   const phone1 = settings["phone_primary"] || "+232 79 494-545";
   const phone2 = settings["phone_secondary"] || "+232 72 080-818";
   const tel = (v: string) => `tel:${v.replace(/[^\d+]/g, "")}`;
-  const address = settings["address"] || "Abu Street, Shelmingo, Manjama Section, Bo City, Sierra Leone";
-  const heroTitle = settings["hero_title"] || "Welcome to Mustay Luxury Hotel";
-  const heroSubtitle = settings["hero_subtitle"] || "Luxury, comfort & quality time in Bo City";
-  const aboutText = settings["about_text"] || "";
-  const expansionText = settings["expansion_text"] || "";
+  const address =
+    settings["address"] || "Abu Street, Shelmingo, Manjama Section, Bo City, Sierra Leone";
+  const heroTitle =
+    settings["hero_title"] || settings["site.hero.headline"] || "Welcome to Mustay Luxury Hotel";
+  const heroSubtitle =
+    settings["hero_subtitle"] ||
+    settings["site.hero.eyebrow"] ||
+    "Luxury, comfort & quality time in Bo City";
+  const aboutText =
+    settings["about_text"] ||
+    settings["site.about.headline"] ||
+    "Mustay Luxury Hotel provides comfortable accommodation and warm hospitality in Bo City.";
+  const expansionText =
+    settings["expansion_text"] ||
+    settings["site.construction.headline"] ||
+    "More rooms are coming soon.";
+
+  const showcase: RoomShowcase[] = data.categories.length
+    ? data.categories.map((category) => ({
+        id: category.category === "Deluxe Suite" ? "deluxe" : "standard",
+        dbCategory: category.category as "Standard Room" | "Deluxe Suite",
+        display: category.category === "Deluxe Suite" ? "Deluxe Room" : category.category,
+        price: category.price,
+        fallbackImage: category.category === "Deluxe Suite" ? deluxeImg.url : standardImg.url,
+        tagline: `${category.availableRooms} of ${category.totalRooms} available · Sleeps ${category.capacity}`,
+        description:
+          category.description || "A comfortable Mustay room designed for a relaxed stay.",
+        features: category.amenities,
+      }))
+    : FALLBACK_ROOM_SHOWCASE;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
@@ -206,9 +252,11 @@ function LandingPage() {
   const [checkOut, setCheckOut] = useState(todayISO(1));
   const [guests, setGuests] = useState("2");
   const [message, setMessage] = useState("");
-  const [formStatus, setFormStatus] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [formStatus, setFormStatus] = useState<{ kind: "success" | "error"; text: string } | null>(
+    null,
+  );
 
-  const selectedRoom = ROOM_SHOWCASE.find((r) => r.id === roomId) ?? null;
+  const selectedRoom = showcase.find((r) => r.id === roomId) ?? null;
   const selectedCountry = COUNTRIES.find((c) => c.name === country) ?? {
     name: "Sierra Leone",
     currency: "SLE",
@@ -289,7 +337,10 @@ function LandingPage() {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim() || !phone.trim() || !country || !selectedRoom) {
-      setFormStatus({ kind: "error", text: "Please fill in your name, phone, country, and room type." });
+      setFormStatus({
+        kind: "error",
+        text: "Please fill in your name, phone, country, and room type.",
+      });
       return;
     }
     if (phone.replace(/\D/g, "").length < 6) {
@@ -344,7 +395,11 @@ function LandingPage() {
             "",
             "(I understand this booking is confirmed only once the manager confirms availability.)",
           ];
-          window.open(`https://wa.me/${WA}?text=${encodeURIComponent(lines.join("\n"))}`, "_blank", "noopener");
+          window.open(
+            `https://wa.me/${WA}?text=${encodeURIComponent(lines.join("\n"))}`,
+            "_blank",
+            "noopener",
+          );
           setFormStatus({
             kind: "success",
             text: `Request received! Your booking reference is ${res.bookingNumber}. Opening WhatsApp — please send the message so our manager can confirm availability.`,
@@ -353,7 +408,8 @@ function LandingPage() {
           setPhone("");
           setMessage("");
         },
-        onError: () => setFormStatus({ kind: "error", text: "Something went wrong. Please try again." }),
+        onError: () =>
+          setFormStatus({ kind: "error", text: "Something went wrong. Please try again." }),
       },
     );
   }
@@ -428,7 +484,14 @@ function LandingPage() {
             </a>
           </div>
           <div className="hero-location">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+            >
               <path d="M12 21s-7-6.2-7-11.2A7 7 0 0 1 19 9.8C19 14.8 12 21 12 21z" />
               <circle cx="12" cy="9.5" r="2.3" />
             </svg>
@@ -436,7 +499,11 @@ function LandingPage() {
           </div>
         </div>
         <div className="hero-photo">
-          <img src={heroImg.url} alt="Mustay Luxury Hotel exterior" style={{ position: "absolute", inset: 0 }} />
+          <img
+            src={heroImg.url}
+            alt="Mustay Luxury Hotel exterior"
+            style={{ position: "absolute", inset: 0 }}
+          />
         </div>
       </section>
 
@@ -445,7 +512,14 @@ function LandingPage() {
         <div className="highlights-row">
           <div className="highlight">
             <div className="highlight-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <path d="M13 2 3 14h7l-1 8 11-14h-7l1-6z" />
               </svg>
             </div>
@@ -454,7 +528,14 @@ function LandingPage() {
           </div>
           <div className="highlight">
             <div className="highlight-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <path d="M12 3v3M5 12H2M22 12h-3M6.3 6.3 4.2 4.2M17.7 6.3l2.1-2.1M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" />
               </svg>
             </div>
@@ -463,7 +544,14 @@ function LandingPage() {
           </div>
           <div className="highlight">
             <div className="highlight-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <path d="M2 8.5a16 16 0 0 1 20 0M5.5 12a11 11 0 0 1 13 0M9 15.5a6 6 0 0 1 6 0M12 19h.01" />
               </svg>
             </div>
@@ -472,13 +560,27 @@ function LandingPage() {
           </div>
           <div className="highlight">
             <div className="highlight-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <path d="M4 10h16M6 10V4h2v6M10 10V4h2v6M6 10v10M18 10v10M6 20h12" />
               </svg>
             </div>
             <h3>
               Club &amp; Restaurant{" "}
-              <span style={{ color: "var(--gold)", fontSize: "12px", fontWeight: 600, letterSpacing: "0.03em" }}>
+              <span
+                style={{
+                  color: "var(--gold)",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  letterSpacing: "0.03em",
+                }}
+              >
                 — Coming Soon
               </span>
             </h3>
@@ -511,7 +613,7 @@ function LandingPage() {
             <p>Comfortable accommodation designed for your stay in Bo City.</p>
           </div>
           <div className="rooms-grid">
-            {ROOM_SHOWCASE.map((room) => (
+            {showcase.map((room) => (
               <div
                 key={room.id}
                 className="room-card"
@@ -687,8 +789,8 @@ function LandingPage() {
             <div className="eyebrow">Reservations &amp; Enquiries</div>
             <h2>Reserve Your Stay</h2>
             <p>
-              Get in touch to check availability, ask a question, or plan your visit — we're happy to
-              help.
+              Get in touch to check availability, ask a question, or plan your visit — we're happy
+              to help.
             </p>
             <div className="contact-cards">
               <a href={tel(phone1)} className="contact-card">
@@ -705,7 +807,12 @@ function LandingPage() {
                   <span className="cc-value">{phone2}</span>
                 </span>
               </a>
-              <a href={WA_ENQUIRE} target="_blank" rel="noopener" className="contact-card cc-whatsapp">
+              <a
+                href={WA_ENQUIRE}
+                target="_blank"
+                rel="noopener"
+                className="contact-card cc-whatsapp"
+              >
                 <span className="cc-icon">{WhatsAppIcon}</span>
                 <span className="cc-text">
                   <span className="cc-label">Fastest Response</span>
@@ -714,7 +821,14 @@ function LandingPage() {
               </a>
             </div>
             <div className="contact-address">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+              >
                 <path d="M12 21s-7-6.2-7-11.2A7 7 0 0 1 19 9.8C19 14.8 12 21 12 21z" />
                 <circle cx="12" cy="9.5" r="2.3" />
               </svg>
@@ -750,7 +864,12 @@ function LandingPage() {
             <div className="form-row">
               <div className="form-field">
                 <label htmlFor="country">Country</label>
-                <select id="country" value={country} onChange={(e) => setCountry(e.target.value)} required>
+                <select
+                  id="country"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  required
+                >
                   <option value="">Select your country</option>
                   {COUNTRIES.map((c) => (
                     <option key={c.name} value={c.name}>
@@ -768,7 +887,7 @@ function LandingPage() {
                   required
                 >
                   <option value="">Select a room</option>
-                  {ROOM_SHOWCASE.map((r) => (
+                  {showcase.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.display}
                     </option>
@@ -827,15 +946,23 @@ function LandingPage() {
               {WhatsAppIcon}
               {mutation.isPending ? "Sending…" : "Request on WhatsApp"}
             </button>
-            <p className={`form-status${formStatus ? ` ${formStatus.kind}` : ""}`} role="status" aria-live="polite">
+            <p
+              className={`form-status${formStatus ? ` ${formStatus.kind}` : ""}`}
+              role="status"
+              aria-live="polite"
+            >
               {formStatus?.text}
             </p>
 
             <p className="confirm-note">
               Sending this request does not confirm your booking. Your reservation is only confirmed
               once our manager replies on WhatsApp and confirms room availability for your dates. No
-              account, extra pages, or online payment is required. You can track your request anytime
-              under <Link to="/booking-status" style={{ textDecoration: "underline" }}>My Booking</Link>.
+              account, extra pages, or online payment is required. You can track your request
+              anytime under{" "}
+              <Link to="/booking-status" style={{ textDecoration: "underline" }}>
+                My Booking
+              </Link>
+              .
             </p>
           </form>
         </div>
@@ -855,14 +982,23 @@ function LandingPage() {
       </div>
 
       {/* ROOM MODAL */}
-      <div className={`room-modal${modalRoom ? " open" : ""}`} role="dialog" aria-modal="true" aria-labelledby="roomModalTitle">
+      <div
+        className={`room-modal${modalRoom ? " open" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="roomModalTitle"
+      >
         <div className="room-modal-backdrop" onClick={() => setModalRoom(null)} />
         {modalRoom && (
           <div className="room-modal-panel">
             <div className="room-modal-photo">
               <img src={roomImage(modalRoom)} alt={modalRoom.display} />
               <div className="room-modal-tag">Le {modalRoom.price} / night</div>
-              <button className="room-modal-close" aria-label="Close room details" onClick={() => setModalRoom(null)}>
+              <button
+                className="room-modal-close"
+                aria-label="Close room details"
+                onClick={() => setModalRoom(null)}
+              >
                 &times;
               </button>
             </div>
@@ -906,7 +1042,13 @@ function LandingPage() {
       </div>
 
       {/* WHATSAPP FAB */}
-      <a href={WA_ENQUIRE} target="_blank" rel="noopener" className="whatsapp-fab" aria-label="Chat with us on WhatsApp">
+      <a
+        href={WA_ENQUIRE}
+        target="_blank"
+        rel="noopener"
+        className="whatsapp-fab"
+        aria-label="Chat with us on WhatsApp"
+      >
         {WhatsAppIcon}
         <span className="wa-label">Chat on WhatsApp</span>
       </a>
