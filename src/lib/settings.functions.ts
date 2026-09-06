@@ -18,6 +18,11 @@ export const SETTING_KEYS = [
 
 export type SettingKey = (typeof SETTING_KEYS)[number];
 export type SiteSettings = Record<string, string>;
+export type SiteContent = { settings: SiteSettings; media?: unknown[] };
+
+function emptyContent(): SiteContent {
+  return { settings: {} };
+}
 
 export const SETTING_LABELS: Record<SettingKey, string> = {
   whatsapp_number: "WhatsApp number (digits only, e.g. 23276933022)",
@@ -48,11 +53,67 @@ function publicClient() {
 }
 
 export const getSiteSettings = createServerFn({ method: "GET" }).handler(async () => {
+  const { data: revisions } = await (publicClient().from("site_content_revisions" as never) as any)
+    .select("content")
+    .eq("status", "published")
+    .maybeSingle();
+  const published = revisions?.content as SiteContent | undefined;
+  if (published?.settings) return published.settings;
   const { data } = await publicClient().from("site_settings").select("key, value");
   const settings: SiteSettings = {};
   for (const row of data ?? []) settings[row.key] = row.value;
   return settings;
 });
+
+export const getSiteContentState = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data, error } = await (context.supabase.from("site_content_revisions" as never) as any)
+      .select("status,content,updated_at:created_at")
+      .in("status", ["draft", "published"]);
+    if (error) return { ok: false as const, message: error.message };
+    const draft = data?.find((row: any) => row.status === "draft")?.content ?? emptyContent();
+    const published = data?.find((row: any) => row.status === "published")?.content ?? emptyContent();
+    return { ok: true as const, draft, published, hasChanges: JSON.stringify(draft) !== JSON.stringify(published) };
+  });
+
+export const saveSiteDraft = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ content: z.object({ settings: z.record(z.string(), z.string().max(2000)), media: z.array(z.unknown()).optional() }) }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data: existing } = await (context.supabase.from("site_content_revisions" as never) as any)
+      .select("id").eq("status", "draft").maybeSingle();
+    const query = existing?.id
+      ? (context.supabase.from("site_content_revisions" as never) as any).update({ content: data.content }).eq("id", existing.id)
+      : (context.supabase.from("site_content_revisions" as never) as any).insert({ status: "draft", content: data.content, created_by: context.userId });
+    const { error } = await query;
+    return error ? { ok: false as const, message: error.message } : { ok: true as const };
+  });
+
+export const publishSiteDraft = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data: draft } = await (context.supabase.from("site_content_revisions" as never) as any)
+      .select("content").eq("status", "draft").maybeSingle();
+    if (!draft?.content) return { ok: false as const, message: "There are no saved website changes to publish." };
+    const { error: settingsError } = await context.supabase.from("site_settings").upsert(
+      Object.entries((draft.content as SiteContent).settings ?? {}).map(([key, value]) => ({ key, value, updated_at: new Date().toISOString() })),
+      { onConflict: "key" },
+    );
+    if (settingsError) return { ok: false as const, message: settingsError.message };
+    const { error: removePublishedError } = await (context.supabase.from("site_content_revisions" as never) as any)
+      .delete().eq("status", "published");
+    if (removePublishedError) return { ok: false as const, message: removePublishedError.message };
+    const { error } = await (context.supabase.from("site_content_revisions" as never) as any)
+      .update({ status: "published", published_at: new Date().toISOString() }).eq("status", "draft");
+    if (error) return { ok: false as const, message: error.message };
+    const { error: nextDraftError } = await (context.supabase.from("site_content_revisions" as never) as any)
+      .insert({ status: "draft", content: draft.content, created_by: context.userId });
+    return nextDraftError ? { ok: false as const, message: nextDraftError.message } : { ok: true as const };
+  });
 
 export const getSiteMedia = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await (publicClient().from("site_media" as never) as any)

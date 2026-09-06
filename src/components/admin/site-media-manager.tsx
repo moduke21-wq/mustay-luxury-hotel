@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { getSiteMedia } from "@/lib/settings.functions";
+import { getSiteContentState, getSiteMedia, saveSiteDraft } from "@/lib/settings.functions";
 
 const ADMIN_BACKGROUND_SLOT = "admin-background";
 
@@ -154,7 +154,7 @@ export function SiteMediaManager() {
       return;
     }
     const { data: publicData } = supabase.storage.from("site-media").getPublicUrl(path);
-    const existing = slot === "gallery" ? undefined : media.find((item) => item.slot === slot);
+      const existing = slot === "gallery" ? undefined : media.find((item: MediaRow) => item.slot === slot);
     const payload = {
       slot,
       path: publicData.publicUrl,
@@ -170,8 +170,15 @@ export function SiteMediaManager() {
       toast.error(saveError.message);
       return;
     }
-    toast.success("Website image updated");
+    toast.success("Website image added to the draft");
+    const state = await getSiteContentState();
+    if (state.ok) {
+      await saveSiteDraft({
+        data: { content: { ...state.draft, media: [...(state.draft.media ?? []), payload] } },
+      });
+    }
     queryClient.invalidateQueries({ queryKey: ["site-media"] });
+    queryClient.invalidateQueries({ queryKey: ["site-content-state"] });
   }
 
   async function remove(item: MediaRow) {
@@ -182,8 +189,15 @@ export function SiteMediaManager() {
     setBusy(null);
     if (error) toast.error(error.message);
     else {
-      toast.success("Website image removed");
+      toast.success("Website image removed from the draft");
+      const state = await getSiteContentState();
+      if (state.ok) {
+        await saveSiteDraft({
+          data: { content: { ...state.draft, media: (state.draft.media ?? []).filter((entry: any) => entry.id !== item.id && entry.path !== item.path) } },
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["site-media"] });
+      queryClient.invalidateQueries({ queryKey: ["site-content-state"] });
     }
   }
 

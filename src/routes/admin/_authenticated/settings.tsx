@@ -13,7 +13,9 @@ import {
   SETTING_KEYS,
   SETTING_LABELS,
   getSiteSettings,
-  saveSiteSettings,
+  getSiteContentState,
+  publishSiteDraft,
+  saveSiteDraft,
   setCategoryPrice,
   type SettingKey,
 } from "@/lib/settings.functions";
@@ -46,6 +48,10 @@ function SettingsPage() {
     queryKey: ["site-settings"],
     queryFn: () => getSiteSettings(),
   });
+  const { data: contentState } = useQuery({
+    queryKey: ["site-content-state"],
+    queryFn: () => getSiteContentState(),
+  });
   const { data: overview } = useQuery({
     queryKey: ["admin-overview"],
     queryFn: () => getAdminOverview(),
@@ -53,16 +59,26 @@ function SettingsPage() {
 
   const [form, setForm] = useState<Record<string, string>>({});
   useEffect(() => {
-    if (settings) setForm(settings);
-  }, [settings]);
+    const draft = contentState?.ok ? contentState.draft.settings : settings;
+    if (draft) setForm(draft);
+  }, [contentState, settings]);
 
   const saveMut = useMutation({
-    mutationFn: () => saveSiteSettings({ data: { settings: form } }),
+    mutationFn: () => saveSiteDraft({ data: { content: { settings: form } } }),
     onSuccess: (res) => {
       if (res.ok) {
-        toast.success("Website updated");
-        queryClient.invalidateQueries({ queryKey: ["site-settings"] });
-      } else toast.error(res.message ?? "Could not save");
+        toast.success("Draft saved. Publish when you are ready.");
+        queryClient.invalidateQueries({ queryKey: ["site-content-state"] });
+      } else toast.error(res.message ?? "Could not save draft");
+    },
+  });
+  const publishMut = useMutation({
+    mutationFn: () => publishSiteDraft(),
+    onSuccess: (res) => {
+      if (res.ok) {
+        toast.success("Website published successfully");
+        queryClient.invalidateQueries({ queryKey: ["site-content-state", "site-settings"] });
+      } else toast.error(res.message ?? "Could not publish website");
     },
   });
 
@@ -132,6 +148,20 @@ function SettingsPage() {
             )}
           </div>
         ))}
+        <div className="flex flex-col gap-3 rounded-lg border border-border bg-secondary/30 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-medium">Publishing workflow</p>
+            <p className="text-xs text-muted-foreground">
+              Save a private draft first. Publish only appears when the draft differs from the live website.
+            </p>
+          </div>
+          {contentState?.ok && contentState.hasChanges ? (
+            <Button type="button" onClick={() => publishMut.mutate()} disabled={publishMut.isPending} className="bg-navy text-background hover:bg-navy/90">
+              {publishMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Publish website
+            </Button>
+          ) : null}
+        </div>
         <Button
           onClick={() => saveMut.mutate()}
           disabled={saveMut.isPending}
