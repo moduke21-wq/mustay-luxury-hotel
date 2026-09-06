@@ -34,13 +34,7 @@ const origins = [
 export const auth = betterAuth({
   secret,
   database: drizzleAdapter(db, { provider: "pg", schema }),
-  baseURL:
-    process.env.BETTER_AUTH_URL ??
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : process.env.V0_RUNTIME_URL),
+  baseURL: process.env.BETTER_AUTH_URL ?? process.env.V0_RUNTIME_URL ?? undefined,
   trustedOrigins: origins,
   user: {
     additionalFields: {
