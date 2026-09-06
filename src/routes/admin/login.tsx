@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authClient } from "@/lib/better-auth-client";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/login")({
   head: () => ({
@@ -38,8 +38,7 @@ function AdminLogin() {
       return;
     }
     setLoading(true);
-    const { error } = await authClient.requestPasswordReset({
-      email: address,
+    const { error } = await supabase.auth.resetPasswordForEmail(address, {
       redirectTo: `${window.location.origin}/admin/login`,
     });
     setLoading(false);
@@ -55,7 +54,7 @@ function AdminLogin() {
     e.preventDefault();
     setLoading(true);
     const address = email.trim().toLowerCase();
-    const { error } = await authClient.signIn.email({ email: address, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: address, password });
 
     setLoading(false);
     if (error) {
