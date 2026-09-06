@@ -92,7 +92,7 @@ export const getAdminOverview = createServerFn({ method: "GET" })
         total_amount: Number(b.total_amount),
         room_number: b.room_id ? (roomNumberById.get(b.room_id) ?? null) : null,
       })) as AdminBooking[],
-      gallery: (mediaRows ?? []).map((item) => ({
+      gallery: (mediaRows ?? []).map((item: { id: string; path: string; label: string | null; alt_text: string | null }) => ({
         id: item.id,
         path: item.path,
         label: item.label,

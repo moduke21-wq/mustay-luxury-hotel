@@ -442,15 +442,15 @@ function LandingPage() {
   }
 
   const uploadedGalleryItems = media
-    .filter((item) => item.slot === "gallery")
-    .map((item) => ({
+    .filter((item: { slot: string }) => item.slot === "gallery")
+    .map((item: { path: string; alt_text?: string; label?: string }) => ({
       src: item.path,
       alt: item.alt_text || "Mustay gallery image",
       cat: "all" as const,
       label: item.label || "Gallery",
     }));
   const galleryItems = (uploadedGalleryItems.length > 0 ? uploadedGalleryItems : GALLERY).filter(
-    (g) => galleryFilter === "all" || g.cat === galleryFilter,
+    (g: { cat: string }) => galleryFilter === "all" || g.cat === galleryFilter,
   );
 
   return (
@@ -799,7 +799,7 @@ function LandingPage() {
             </div>
           </div>
           <div className="gallery-grid">
-            {galleryItems.map((g) => (
+            {galleryItems.map((g: { src: string; alt: string; label: string }) => (
               <div
                 key={g.src}
                 className="g-item"
