@@ -4,7 +4,7 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
-import * as schema from "../../drizzle/auth-schema";
+import { authSchema } from "../../drizzle/auth-schema";
 
 const databaseUrl = process.env.POSTGRES_URL;
 const secret = process.env.BETTER_AUTH_SECRET;
@@ -13,7 +13,7 @@ if (!databaseUrl) throw new Error("POSTGRES_URL is required for Better Auth");
 if (!secret) throw new Error("BETTER_AUTH_SECRET is required for Better Auth");
 
 const sql = postgres(databaseUrl, { max: 5, prepare: false });
-const db = drizzle(sql, { schema });
+const db = drizzle(sql, { schema: authSchema });
 
 const origins = [
   "http://localhost:3000",
@@ -21,6 +21,10 @@ const origins = [
   process.env.V0_DEV_APP_URL,
   process.env.V0_BUILD_URL,
   process.env.V0_SANDBOX_URL,
+  "https://mustayluxury-hotel-1mdckte6a-duke-marketplace.vercel.app",
+  "https://mustay-luxury-hotel.vercel.app",
+  "https://mustayluxury-hotel.vercel.app",
+  "https://*.v0.build",
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
   process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
@@ -29,14 +33,8 @@ const origins = [
 
 export const auth = betterAuth({
   secret,
-  database: drizzleAdapter(db, { provider: "pg", schema }),
-  baseURL:
-    process.env.BETTER_AUTH_URL ??
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : process.env.VERCEL_URL
-        ? `https://${process.env.VERCEL_URL}`
-        : process.env.V0_RUNTIME_URL),
+  database: drizzleAdapter(db, { provider: "pg", schema: authSchema }),
+  baseURL: process.env.BETTER_AUTH_URL ?? process.env.V0_RUNTIME_URL ?? undefined,
   trustedOrigins: origins,
   user: {
     additionalFields: {
@@ -44,6 +42,7 @@ export const auth = betterAuth({
     },
   },
   emailAndPassword: { enabled: true, requireEmailVerification: false },
+  logger: { level: "debug" },
   databaseHooks: {
     user: {
       create: {
@@ -73,13 +72,9 @@ export const auth = betterAuth({
     }),
     tanstackStartCookies(),
   ],
-  ...(process.env.NODE_ENV === "development"
-    ? {
-        advanced: {
-          defaultCookieAttributes: { sameSite: "none" as const, secure: true },
-        },
-      }
-    : {}),
+  advanced: {
+    defaultCookieAttributes: { sameSite: "none" as const, secure: true },
+  },
 });
 
 export type BetterAuthSession = typeof auth.$Infer.Session;
