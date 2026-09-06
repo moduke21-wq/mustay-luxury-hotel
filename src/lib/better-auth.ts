@@ -24,6 +24,7 @@ const origins = [
   "https://mustayluxury-hotel-1mdckte6a-duke-marketplace.vercel.app",
   "https://mustay-luxury-hotel.vercel.app",
   "https://mustayluxury-hotel.vercel.app",
+  "https://*.v0.build",
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined,
   process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
@@ -76,13 +77,9 @@ export const auth = betterAuth({
     }),
     tanstackStartCookies(),
   ],
-  ...(process.env.NODE_ENV === "development"
-    ? {
-        advanced: {
-          defaultCookieAttributes: { sameSite: "none" as const, secure: true },
-        },
-      }
-    : {}),
+  advanced: {
+    defaultCookieAttributes: { sameSite: "none" as const, secure: true },
+  },
 });
 
 export type BetterAuthSession = typeof auth.$Infer.Session;
