@@ -4,7 +4,7 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
-import * as schema from "../../drizzle/auth-schema";
+import { authSchema } from "../../drizzle/auth-schema";
 
 const databaseUrl = process.env.POSTGRES_URL;
 const secret = process.env.BETTER_AUTH_SECRET;
@@ -13,7 +13,7 @@ if (!databaseUrl) throw new Error("POSTGRES_URL is required for Better Auth");
 if (!secret) throw new Error("BETTER_AUTH_SECRET is required for Better Auth");
 
 const sql = postgres(databaseUrl, { max: 5, prepare: false });
-const db = drizzle(sql, { schema });
+const db = drizzle(sql, { schema: authSchema });
 
 const origins = [
   "http://localhost:3000",
@@ -33,7 +33,7 @@ const origins = [
 
 export const auth = betterAuth({
   secret,
-  database: drizzleAdapter(db, { provider: "pg", schema }),
+  database: drizzleAdapter(db, { provider: "pg", schema: authSchema }),
   baseURL: process.env.BETTER_AUTH_URL ?? process.env.V0_RUNTIME_URL ?? undefined,
   trustedOrigins: origins,
   user: {
@@ -42,6 +42,7 @@ export const auth = betterAuth({
     },
   },
   emailAndPassword: { enabled: true, requireEmailVerification: false },
+  logger: { level: "debug" },
   databaseHooks: {
     user: {
       create: {

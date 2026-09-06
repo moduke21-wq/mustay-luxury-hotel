@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS ba_account (
   id TEXT PRIMARY KEY,
   account_id TEXT NOT NULL,
   provider_id TEXT NOT NULL,
+  issuer TEXT,
   user_id TEXT NOT NULL REFERENCES ba_user(id) ON DELETE CASCADE,
   access_token TEXT,
   refresh_token TEXT,
