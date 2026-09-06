@@ -65,8 +65,7 @@ export const getAdminOverview = createServerFn({ method: "GET" })
     const [{ data: roomRows }, { data: bookingRows }, { data: mediaRows }] = await Promise.all([
       supabase.from("rooms").select("*").order("room_number"),
       supabase.from("bookings").select("*").order("created_at", { ascending: false }).limit(200),
-      supabase
-        .from("site_media")
+      (supabase.from("site_media" as never) as any)
         .select("id, path, label, alt_text, display_order")
         .eq("slot", "gallery")
         .order("display_order"),
