@@ -51,15 +51,22 @@ function StaffPage() {
     mutationFn: () => inviteOwner({ data: undefined }),
     onSuccess: (res) => {
       if (res.ok) {
-        toast.success("Owner setup invitation sent to mustaybookkeepingservices@gmail.com");
+        toast.success(
+          res.invited
+            ? "Owner setup invitation sent to mustaybookkeepingservices@gmail.com"
+            : "Owner account is ready and has admin permissions",
+        );
         invalidate();
       } else toast.error(res.message);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message || "Could not process the owner invitation"),
   });
 
   const createMut = useMutation({
-    mutationFn: () => createStaff({ data: { email, fullName, password, role } }),
+    mutationFn: () =>
+      createStaff({
+        data: { email: email.trim().toLowerCase(), fullName: fullName.trim(), password, role },
+      }),
     onSuccess: (res) => {
       if (res.ok) {
         toast.success("Account created");

@@ -51,33 +51,39 @@ export const inviteOwner = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertAdmin(supabaseAdmin, context.userId);
 
-    const { data: invited, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(OWNER_EMAIL, {
-      data: { full_name: "Mustay Luxury Owner", is_owner: true },
-    });
-    if (error || !invited.user) {
-      const duplicate = error?.message.toLowerCase().includes("already") || error?.status === 422;
-      return {
-        ok: false as const,
-        message: duplicate
-          ? "That owner account already exists. Use Forgot password on the login page to set or reset its password."
-          : (error?.message ?? "Could not send the owner setup invitation."),
-      };
+    const redirectTo =
+      process.env["NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL"] ??
+      `${process.env["SUPABASE_URL"]}/auth/v1/callback`;
+    const { data: existing } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+    const existingOwner = existing.users.find((user) => user.email?.toLowerCase() === OWNER_EMAIL);
+    let owner = existingOwner;
+
+    if (!owner) {
+      const { data: invited, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(OWNER_EMAIL, {
+        redirectTo,
+        data: { full_name: "Mustay Luxury Owner", is_owner: true },
+      });
+      if (error || !invited.user) {
+        return {
+          ok: false as const,
+          message: error?.message ?? "Could not send the owner setup invitation.",
+        };
+      }
+      owner = invited.user;
     }
 
-    const { error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .upsert(
-        { id: invited.user.id, email: OWNER_EMAIL, full_name: "Mustay Luxury Owner" },
-        { onConflict: "id" },
-      );
-    if (profileError) return { ok: false as const, message: "Owner profile could not be saved." };
+    const { error: profileError } = await supabaseAdmin.from("profiles").upsert(
+      { id: owner.id, email: OWNER_EMAIL, full_name: "Mustay Luxury Owner" },
+      { onConflict: "id" },
+    );
+    if (profileError) return { ok: false as const, message: `Owner profile could not be saved: ${profileError.message}` };
 
     const { error: roleError } = await supabaseAdmin
       .from("user_roles")
-      .upsert({ user_id: invited.user.id, role: "admin" }, { onConflict: "user_id,role" });
-    if (roleError) return { ok: false as const, message: "Owner permissions could not be saved." };
+      .upsert({ user_id: owner.id, role: "admin" }, { onConflict: "user_id,role" });
+    if (roleError) return { ok: false as const, message: `Owner permissions could not be saved: ${roleError.message}` };
 
-    return { ok: true as const };
+    return { ok: true as const, invited: !existingOwner };
   });
 
 export const createStaff = createServerFn({ method: "POST" })
@@ -110,19 +116,32 @@ export const createStaff = createServerFn({ method: "POST" })
       email_confirm: true,
       user_metadata: { full_name: data.fullName || email },
     });
-    if (error || !created.user)
-      return { ok: false as const, message: error?.message ?? "Could not create account." };
+    if (error || !created.user) {
+      const duplicate = error?.status === 422 || error?.message.toLowerCase().includes("already");
+      return {
+        ok: false as const,
+        message: duplicate ? "An account with that email already exists." : (error?.message ?? "Could not create account."),
+      };
+    }
 
-    await supabaseAdmin
-      .from("profiles")
-      .upsert(
-        { id: created.user.id, email, full_name: data.fullName || email },
-        { onConflict: "id" },
-      );
-    const { error: roleError } = await supabaseAdmin
+    const userId = created.user.id;
+    const profileResult = await supabaseAdmin.from("profiles").upsert(
+      { id: userId, email, full_name: data.fullName || email },
+      { onConflict: "id" },
+    );
+    if (profileResult.error) {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      return { ok: false as const, message: `Staff profile could not be saved: ${profileResult.error.message}` };
+    }
+
+    const roleResult = await supabaseAdmin
       .from("user_roles")
-      .insert({ user_id: created.user.id, role: data.role });
-    if (roleError) return { ok: false as const, message: roleError.message };
+      .upsert({ user_id: userId, role: data.role }, { onConflict: "user_id,role" });
+    if (roleResult.error) {
+      await supabaseAdmin.from("profiles").delete().eq("id", userId);
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      return { ok: false as const, message: `Staff permissions could not be saved: ${roleResult.error.message}` };
+    }
 
     return { ok: true as const };
   });
