@@ -108,7 +108,7 @@ function MediaSlotRoomSettings({
               price_per_night: Number(price),
               amenities: offers
                 .split(",")
-                .map((item) => item.trim())
+                .map((item: string) => item.trim())
                 .filter(Boolean),
             })
           }
