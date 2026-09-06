@@ -59,9 +59,8 @@ function SettingsPage() {
 
   const [form, setForm] = useState<Record<string, string>>({});
   useEffect(() => {
-    const draft = contentState?.ok ? contentState.draft.settings : settings;
-    if (draft) setForm(draft);
-  }, [contentState, settings]);
+    if (settings) setForm(settings);
+  }, [settings]);
 
   const saveMut = useMutation({
     mutationFn: () => saveSiteDraft({ data: { content: { settings: form } } }),

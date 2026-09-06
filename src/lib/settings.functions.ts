@@ -87,6 +87,16 @@ export const saveSiteDraft = createServerFn({ method: "POST" })
     await assertAdmin(context.supabase, context.userId);
     const { data: existing } = await (context.supabase.from("site_content_revisions" as never) as any)
       .select("id").eq("status", "draft").maybeSingle();
+    const rows = Object.entries(data.content.settings ?? {})
+      .filter(([key]) => (SETTING_KEYS as readonly string[]).includes(key))
+      .map(([key, value]) => ({ key, value, updated_at: new Date().toISOString() }));
+    if (rows.length) {
+      const { error: settingsError } = await context.supabase
+        .from("site_settings")
+        .upsert(rows, { onConflict: "key" });
+      if (settingsError) return { ok: false as const, message: settingsError.message };
+    }
+
     const query = existing?.id
       ? (context.supabase.from("site_content_revisions" as never) as any).update({ content: data.content }).eq("id", existing.id)
       : (context.supabase.from("site_content_revisions" as never) as any).insert({ status: "draft", content: data.content, created_by: context.userId });
