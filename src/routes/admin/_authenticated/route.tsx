@@ -2,14 +2,11 @@ import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
-  BedDouble,
   LayoutDashboard,
   LogOut,
   Moon,
-  Search,
   Settings,
   Sun,
-  Users,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,10 +25,7 @@ export const Route = createFileRoute("/admin/_authenticated")({
 
 const NAV = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/admin/rooms", label: "Rooms", icon: BedDouble },
-  { to: "/admin/reception", label: "Bookings", icon: Search },
-  { to: "/admin/settings", label: "Website media", icon: Settings },
-  { to: "/admin/staff", label: "Staff", icon: Users },
+  { to: "/admin/settings", label: "Website content", icon: Settings },
 ] as const;
 
 function AdminLayout() {
@@ -45,8 +39,6 @@ function AdminLayout() {
     navigate({ to: "/admin/login", replace: true });
   }
 
-  const [adminBackground, setAdminBackground] = useState<string | null>(null);
-  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [adminName, setAdminName] = useState("CEO Mustapha");
   const [adminEmail, setAdminEmail] = useState("");
   const [darkMode, setDarkMode] = useState(false);
@@ -63,22 +55,10 @@ function AdminLayout() {
       setAdminEmail(data.user.email ?? "");
       setAdminName(
         String(
-          data.user.user_metadata?.full_name ?? data.user.user_metadata?.name ?? "CEO Mustapha",
+          data.user.user_metadata?.["full_name"] ?? data.user.user_metadata?.["name"] ?? "Administrator",
         ),
       );
     });
-    void supabase
-      .from("site_media" as never)
-      .select("slot,path")
-      .in("slot", ["admin-background", "admin-profile"])
-      .then(({ data }) => {
-        if (!active || !Array.isArray(data)) return;
-        for (const item of data) {
-          if (!item || typeof item !== "object" || !("slot" in item) || !("path" in item)) continue;
-          if (item.slot === "admin-background") setAdminBackground(String(item.path));
-          if (item.slot === "admin-profile") setProfilePhoto(String(item.path));
-        }
-      });
     return () => {
       active = false;
     };
@@ -94,32 +74,13 @@ function AdminLayout() {
   return (
     <div
       className="min-h-screen bg-secondary/40 pb-20 md:flex md:pb-0"
-      style={
-        adminBackground
-          ? {
-              backgroundImage: `linear-gradient(oklch(0.13 0.04 265 / 0.88), oklch(0.13 0.04 265 / 0.88)), url(${adminBackground})`,
-              backgroundAttachment: "fixed",
-              backgroundPosition: "center",
-              backgroundSize: "cover",
-            }
-          : undefined
-      }
+
     >
       <aside className="hidden w-64 shrink-0 flex-col justify-between bg-navy p-6 text-background md:flex md:min-h-screen">
         <div>
           <div className="border-b border-background/10 pb-6">
             <div className="flex items-center gap-3">
-              {profilePhoto ? (
-                <img
-                  src={profilePhoto}
-                  alt="CEO Mustapha"
-                  className="h-10 w-10 rounded-full object-cover"
-                />
-              ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold text-sm font-semibold text-gold-foreground">
-                  CM
-                </div>
-              )}
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold text-sm font-semibold text-gold-foreground">M</div>
               <div>
                 <p className="font-semibold">{adminName}</p>
                 <p className="text-xs text-background/60">{adminEmail || "Administrator"}</p>
@@ -152,9 +113,7 @@ function AdminLayout() {
 
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-navy px-4 py-3 text-background md:hidden">
         <div className="flex items-center gap-2">
-          {profilePhoto ? (
-            <img src={profilePhoto} alt={adminName} className="h-8 w-8 rounded-full object-cover" />
-          ) : null}
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold text-sm font-semibold text-gold-foreground">M</div>
           <p className="font-display text-lg">{adminName}</p>
         </div>
         <Button
@@ -190,7 +149,7 @@ function AdminLayout() {
         <Outlet />
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-5 border-t border-border bg-background md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-30 grid grid-cols-2 border-t border-border bg-background md:hidden">
         {NAV.map(({ to, label, icon: Icon }) => (
           <Link
             key={to}

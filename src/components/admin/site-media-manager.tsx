@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { getSiteContentState, getSiteMedia, saveSiteDraft } from "@/lib/settings.functions";
+import { getSiteMedia } from "@/lib/settings.functions";
 
 const ADMIN_BACKGROUND_SLOT = "admin-background";
 
@@ -170,15 +170,9 @@ export function SiteMediaManager() {
       toast.error(saveError.message);
       return;
     }
-    toast.success("Website image added to the draft");
-    const state = await getSiteContentState();
-    if (state.ok) {
-      await saveSiteDraft({
-        data: { content: { ...state.draft, media: [...(state.draft.media ?? []), payload] } },
-      });
-    }
+    toast.success("Website image saved and is live");
     queryClient.invalidateQueries({ queryKey: ["site-media"] });
-    queryClient.invalidateQueries({ queryKey: ["site-content-state"] });
+    queryClient.invalidateQueries({ queryKey: ["site-settings"] });
   }
 
   async function remove(item: MediaRow) {
@@ -189,15 +183,8 @@ export function SiteMediaManager() {
     setBusy(null);
     if (error) toast.error(error.message);
     else {
-      toast.success("Website image removed from the draft");
-      const state = await getSiteContentState();
-      if (state.ok) {
-        await saveSiteDraft({
-          data: { content: { ...state.draft, media: (state.draft.media ?? []).filter((entry: any) => entry.id !== item.id && entry.path !== item.path) } },
-        });
-      }
+      toast.success("Website image removed");
       queryClient.invalidateQueries({ queryKey: ["site-media"] });
-      queryClient.invalidateQueries({ queryKey: ["site-content-state"] });
     }
   }
 
