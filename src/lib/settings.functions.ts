@@ -53,16 +53,18 @@ function publicClient() {
 }
 
 export const getSiteSettings = createServerFn({ method: "GET" }).handler(async () => {
+  const { data, error } = await publicClient().from("site_settings").select("key, value");
+  if (!error && data?.length) {
+    const settings: SiteSettings = {};
+    for (const row of data) settings[row.key] = row.value;
+    return settings;
+  }
+
   const { data: revisions } = await (publicClient().from("site_content_revisions" as never) as any)
     .select("content")
     .eq("status", "published")
     .maybeSingle();
-  const published = revisions?.content as SiteContent | undefined;
-  if (published?.settings) return published.settings;
-  const { data } = await publicClient().from("site_settings").select("key, value");
-  const settings: SiteSettings = {};
-  for (const row of data ?? []) settings[row.key] = row.value;
-  return settings;
+  return ((revisions?.content as SiteContent | undefined)?.settings ?? {}) as SiteSettings;
 });
 
 export const getSiteContentState = createServerFn({ method: "GET" })
@@ -120,7 +122,12 @@ export const getSiteMedia = createServerFn({ method: "GET" }).handler(async () =
     .select("id,slot,room_id,path,label,alt_text,display_order")
     .order("display_order", { ascending: true });
   if (error) return [];
-  return data ?? [];
+
+  const storage = publicClient().storage.from("site-media");
+  return (data ?? []).map((item: { path: string; [key: string]: unknown }) => ({
+    ...item,
+    path: /^https?:\/\//i.test(item.path) ? item.path : storage.getPublicUrl(item.path).data.publicUrl,
+  }));
 });
 
 export const saveSiteSettings = createServerFn({ method: "POST" })
