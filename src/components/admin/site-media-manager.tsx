@@ -160,7 +160,7 @@ export function SiteMediaManager() {
       path: publicData.publicUrl,
       label: MEDIA_SLOTS.find((item) => item.slot === slot)?.label ?? slot,
       alt_text: file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
-      display_order: existing?.display_order ?? media.filter((item) => item.slot === slot).length,
+      display_order: existing?.display_order ?? media.filter((item: MediaRow) => item.slot === slot).length,
     };
     const { error: saveError } = existing
       ? await (supabase.from("site_media" as never) as any).update(payload).eq("id", existing.id)
@@ -220,12 +220,12 @@ export function SiteMediaManager() {
           {error instanceof Error ? error.message : "Please refresh and try again."}
         </div>
       ) : null}
-      {media.filter((item) => item.slot === "gallery").length > 0 ? (
+      {media.filter((item: MediaRow) => item.slot === "gallery").length > 0 ? (
         <div className="mt-4 rounded-lg border border-border bg-secondary/20 p-3">
           <p className="text-sm font-medium">Uploaded gallery images</p>
           <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {media
-              .filter((item) => item.slot === "gallery")
+              .filter((item: MediaRow) => item.slot === "gallery")
               .map((item) => (
                 <div
                   key={item.id}
